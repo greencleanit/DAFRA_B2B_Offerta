@@ -1,0 +1,2709 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>SalesQuote B2B — Portale Offerte & Catalogo</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+ <script>
+ if (window.pdfjsLib) {
+ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ }
+ </script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+ <style>
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+ body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+ .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+ .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+ .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+ @media print {
+ body * { visibility: hidden; }
+ #print-area, #print-area * { visibility: visible; }
+ #print-area { position: absolute; left: 0; top: 0; width: 100%; background: white; padding: 0; margin: 0; }
+ .no-print { display: none !important; }
+ .print-row, .print-card { break-inside: avoid; page-break-inside: avoid; }
+ .print-page-break { page-break-before: always; break-before: page; }
+ a { text-decoration: none !important; }
+ * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+ }
+ </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+ <!-- ==================== SCHERMATA LOGIN AGENTE ==================== -->
+ <div id="login-screen" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-50 flex items-center justify-center p-4 no-print">
+ <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 space-y-6 border border-slate-200">
+ <div class="text-center space-y-2">
+ <div class="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg text-2xl">
+ <i class="fa-solid fa-file-invoice-dollar"></i>
+ </div>
+ <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Area Riservata Agenti</h1>
+ <p class="text-xs text-slate-500">Inserisci il tuo nome e la password aziendale per creare offerte commerciali e consultare il listino.</p>
+ </div>
+
+ <form onsubmit="handleAgentLogin(event)" class="space-y-4">
+ <div>
+ <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nome Agente *</label>
+ <div class="relative">
+ <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+ <input type="text" id="login-agent-name" required placeholder="Es. Mario Rossi" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white" />
+ </div>
+ </div>
+ <div>
+ <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Password *</label>
+ <div class="relative">
+ <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+ <input type="password" id="login-password" required placeholder="Inserisci password" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white" />
+ </div>
+ </div>
+ <p id="login-error" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2 rounded-lg text-center">
+ Password errata. Riprova.
+ </p>
+ <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2">
+ <span>Accedi al Portale</span>
+ <i class="fa-solid fa-arrow-right"></i>
+ </button>
+ </form>
+ </div>
+ </div>
+
+ <!-- TOP NAVBAR -->
+ <header id="app-header" class="bg-slate-900 text-white shadow-md sticky top-0 z-30 no-print hidden">
+ <div class="max-w-[1600px] mx-auto px-3 sm:px-6 h-12 flex items-center justify-between gap-2">
+ <div class="flex items-center gap-2 shrink-0">
+ <div class="bg-indigo-600 p-1.5 rounded-lg flex items-center justify-center">
+ <i class="fa-solid fa-file-invoice-dollar text-sm text-white"></i>
+ </div>
+ <div>
+ <h1 class="font-bold text-sm tracking-tight leading-none">SalesQuote <span class="text-indigo-400">B2B</span></h1>
+ </div>
+ </div>
+
+ <nav class="flex items-center gap-1 bg-slate-800 p-1 rounded-xl overflow-x-auto">
+ <button onclick="switchTab('catalog')" id="nav-catalog" class="px-2.5 py-1 rounded-lg text-xs font-medium transition flex items-center gap-1.5 bg-indigo-600 text-white shadow whitespace-nowrap">
+ <i class="fa-solid fa-file-signature"></i> <span>Offerte & Listino</span>
+ <span id="badge-quote-count" class="bg-white text-indigo-700 text-[10px] font-bold px-1.5 rounded-full">0</span>
+ </button>
+ <button onclick="switchTab('history')" id="nav-history" class="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
+ <i class="fa-solid fa-clock-rotate-left"></i> <span>Storico</span>
+ <span id="badge-history-count" class="bg-slate-700 text-slate-300 text-[10px] font-semibold px-1.5 rounded-full">0</span>
+ </button>
+ <!-- MENU ALIMENTAZIONE VISIBILE ESCLUSIVAMENTE PER UTENTE 'Tonyus' -->
+ <button onclick="switchTab('manage')" id="nav-manage" class="admin-only-tonyus hidden px-2.5 py-1 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition items-center gap-1.5 whitespace-nowrap">
+ <i class="fa-solid fa-database"></i> <span>Alimentazione Listino & Drive</span>
+ </button>
+ <button onclick="switchTab('families')" id="nav-families" class="admin-only-tonyus hidden px-2.5 py-1 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition items-center gap-1.5 whitespace-nowrap">
+ <i class="fa-solid fa-images"></i> <span>Immagini Famiglie</span>
+ </button>
+ <button onclick="switchTab('settings')" id="nav-settings" class="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
+ <i class="fa-solid fa-building"></i> <span class="hidden sm:inline">Azienda</span>
+ </button>
+ </nav>
+
+ <!-- CARTELLA LOCALE (SOLO TONYUS) + SYNC CLOUD + UTENTE LOGGATO -->
+ <div class="flex items-center gap-1.5 shrink-0">
+ <button onclick="syncFromGoogleCloud(true)" id="btn-cloud-sync" class="hidden bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 px-2 py-1 rounded-lg text-xs font-medium items-center gap-1.5 transition" title="Sincronizza dati dal Cloud Google Drive">
+ <i class="fa-solid fa-arrows-rotate"></i>
+ <span class="hidden xl:inline">Sincronizza</span>
+ </button>
+ <label for="folder-picker" class="admin-only-tonyus hidden cursor-pointer bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 px-2 py-1 rounded-lg text-xs font-medium items-center gap-1.5 transition" title="Collega cartella locale con foto e PDF">
+ <i class="fa-solid fa-folder-tree"></i>
+ <span id="folder-status-text" class="hidden xl:inline">Cartella Locale</span>
+ </label>
+ <input type="file" id="folder-picker" webkitdirectory directory multiple class="hidden" onchange="handleLocalFolderMount(event)" />
+
+ <div class="flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700 text-xs">
+ <i class="fa-solid fa-user-check text-indigo-400"></i>
+ <span id="logged-agent-badge" class="font-semibold text-slate-200 max-w-[85px] truncate">Agente</span>
+ <button onclick="logoutAgent()" class="text-slate-400 hover:text-rose-400 ml-1" title="Esci"><i class="fa-solid fa-right-from-bracket"></i></button>
+ </div>
+ </div>
+ </div>
+ </header>
+
+ <!-- MAIN CONTENT -->
+ <main id="app-main" class="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-5 py-2.5 no-print hidden">
+
+ <!-- ==================== TAB 1: CREAZIONE OFFERTE & CONSULTAZIONE LISTINO ==================== -->
+ <section id="tab-catalog" class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+
+ <!-- SINISTRA: RICERCA ARTICOLI PER OFFERTA + FUNZIONE ACCESSORIA STAMPA CATALOGO -->
+ <div class="lg:col-span-7 xl:col-span-7 space-y-2.5">
+ <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+ <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
+ <div class="flex items-center gap-2">
+ <span class="text-xs font-bold text-slate-800 uppercase tracking-wide"><i class="fa-solid fa-magnifying-glass text-indigo-600 mr-1"></i> Selezione Articoli Offerta</span>
+ <span id="catalog-stats-label" class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full"></span>
+ </div>
+ <!-- PULSANTI ACCESSORI CATALOGO (NON INVADENTI) -->
+ <div class="flex flex-wrap items-center gap-1.5">
+ <button type="button" onclick="toggleFamiliesDrawer()" id="btn-toggle-families" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition flex items-center gap-1">
+ <i class="fa-solid fa-layer-group text-indigo-600"></i> <span>Famiglie</span>
+ </button>
+ <button type="button" onclick="openCatalogPrintModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold transition flex items-center gap-1" title="Funzione accessoria: stampa catalogo per famiglia con foto, prezzi, QR e link PDF">
+ <i class="fa-solid fa-book-open"></i> <span>Stampa Catalogo</span>
+ </button>
+ </div>
+ </div>
+
+ <div class="grid grid-cols-1 sm:grid-cols-12 gap-1.5">
+ <div class="relative sm:col-span-5">
+ <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-slate-400 text-xs"></i>
+ <input type="text" id="search-input" oninput="resetPageAndRender()" placeholder="Codice, alias, descrizione, Ecolabel..." class="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition" />
+ </div>
+ <select id="category-filter" onchange="onFamilyDropdownChange()" class="sm:col-span-3 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+ <option value="ALL">Tutte le Famiglie</option>
+ </select>
+ <select id="subcategory-filter" onchange="resetPageAndRender()" class="sm:col-span-2 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+ <option value="ALL">Sottofamiglie</option>
+ </select>
+ <select id="cert-filter" onchange="resetPageAndRender()" class="sm:col-span-2 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+ <option value="ALL">Certificazioni</option>
+ <option value="ECOLABEL">Ecolabel</option>
+ <option value="PMC">PMC</option>
+ </select>
+ </div>
+
+ <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+ <div class="flex flex-wrap items-center gap-3">
+ <label class="inline-flex items-center gap-1.5 cursor-pointer select-none font-medium text-slate-700">
+ <input type="checkbox" id="group-by-family-checkbox" onchange="renderCatalog()" class="rounded text-indigo-600 focus:ring-indigo-500">
+ <span>Raggruppa per Famiglia</span>
+ </label>
+ <label class="inline-flex items-center gap-1.5 cursor-pointer select-none font-medium text-slate-700">
+ <input type="checkbox" id="show-cost-checkbox" checked onchange="renderCatalog()" class="rounded text-indigo-600 focus:ring-indigo-500">
+ <span>Mostra Netto Acquisto</span>
+ </label>
+ </div>
+ <select id="status-filter" onchange="resetPageAndRender()" class="px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700">
+ <option value="ALL">Stato: Tutti</option>
+ <option value="In uso">In uso</option>
+ <option value="In esaurimento">In esaurimento</option>
+ <option value="A richiesta">A richiesta</option>
+ </select>
+ </div>
+ </div>
+
+ <!-- VETRINA VISUALE FAMIGLIE (ACCESSORIA E COLLASSABILE) -->
+ <div id="families-drawer" class="hidden space-y-2 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm">
+ <div class="flex items-center justify-between">
+ <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Filtro rapido Famiglie</span>
+ <button type="button" onclick="toggleFamiliesDrawer()" class="text-xs text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i> Chiudi</button>
+ </div>
+ <div id="families-showcase" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2"></div>
+ <div id="subfamilies-showcase" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-2 border-t border-slate-100"></div>
+ </div>
+
+ <!-- CONTENITORE ARTICOLI -->
+ <div id="catalog-container" class="space-y-5"></div>
+
+ <!-- PAGINAZIONE -->
+ <div id="pagination-controls" class="flex items-center justify-between bg-white px-4 py-2 rounded-xl border border-slate-200 text-xs"></div>
+ </div>
+
+ <!-- DESTRA: CONFIGURATORE OFFERTA (OTTIMIZZATO PER SCHERMI PORTATILI SENZA ZOOM OUT) -->
+ <div class="lg:col-span-5 xl:col-span-5 bg-white rounded-2xl shadow-md border border-slate-200 lg:sticky lg:top-14 lg:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+ <!-- TESTATA COMPATTA OFFERTA -->
+ <div class="p-2.5 border-b border-slate-100 bg-slate-50/90 shrink-0 space-y-1.5">
+ <div class="flex items-center justify-between">
+ <h2 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
+ <i class="fa-solid fa-file-invoice-dollar text-indigo-600"></i> Offerta Commerciale
+ </h2>
+ <div class="flex items-center gap-1.5">
+ <button onclick="switchTab('settings')" class="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 bg-indigo-50 px-2 py-0.5 rounded">
+ <i class="fa-solid fa-building"></i> Intestazione
+ </button>
+ <button onclick="clearCurrentQuote()" class="text-[10px] text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 px-1.5 py-0.5">
+ <i class="fa-solid fa-trash-can"></i> Svuota
+ </button>
+ </div>
+ </div>
+
+ <div id="quote-company-banner" onclick="switchTab('settings')" class="cursor-pointer px-2 py-1 rounded-lg bg-white border border-slate-200 hover:border-indigo-300 transition flex items-center gap-2"></div>
+
+ <div class="grid grid-cols-12 gap-1.5">
+ <input type="text" id="quote-client" placeholder="Ragione Sociale Cliente *" class="col-span-7 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+ <input type="email" id="quote-client-email" placeholder="Email Cliente" class="col-span-5 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+ <input type="text" id="quote-agent" placeholder="Agente" class="col-span-4 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+ <input type="date" id="quote-valid-until" class="col-span-4 px-1.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+ <div class="col-span-4 flex items-center bg-indigo-50 border border-indigo-200 rounded-lg px-1.5 py-0.5">
+ <span class="text-[10px] font-bold text-indigo-900 mr-1">Sc%</span>
+ <input type="number" id="global-discount-input" min="0" max="100" step="0.5" placeholder="0" class="w-full text-right text-xs font-bold bg-white border border-indigo-200 rounded px-1 focus:outline-none" />
+ <button onclick="applyGlobalDiscount()" class="ml-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">OK</button>
+ </div>
+ </div>
+ </div>
+
+ <!-- LISTA ARTICOLI NELL'OFFERTA (SCORREVOLE INTERNAMENTE) -->
+ <div id="quote-items-container" class="flex-1 overflow-y-auto p-2.5 space-y-1.5 custom-scrollbar min-h-[90px]"></div>
+
+ <!-- FOOTER RIEPILOGO & PULSANTI STAMPA (SEMPRE VISIBILI SU PORTATILI) -->
+ <div class="p-2.5 border-t border-slate-200 bg-slate-50 shrink-0 space-y-1.5">
+ <div class="flex items-center justify-between text-[11px] bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
+ <div class="text-slate-500">
+ <span>Listino: <strong id="quote-total-list" class="text-slate-700">€ 0,00</strong></span>
+ <span class="mx-1.5 text-slate-300">|</span>
+ <span class="text-emerald-600 font-medium">Sc: <strong id="quote-total-discount">- € 0,00 (0%)</strong></span>
+ </div>
+ <div class="text-right">
+ <span class="text-[10px] text-slate-500 uppercase font-bold mr-1">Netto:</span>
+ <span id="quote-total-net" class="text-indigo-700 font-extrabold text-sm">€ 0,00</span>
+ </div>
+ </div>
+
+ <div class="grid grid-cols-12 gap-1.5 items-center">
+ <input type="text" id="quote-notes" placeholder="Note commerciali, resa, pagamento..." class="col-span-6 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+ <div class="col-span-6 flex items-center justify-end gap-2 text-[10px] text-slate-600">
+ <label class="inline-flex items-center gap-1 cursor-pointer">
+ <input type="checkbox" id="include-images-in-pdf" checked class="rounded text-indigo-600">
+ <span>Foto</span>
+ </label>
+ <label class="inline-flex items-center gap-1 cursor-pointer">
+ <input type="checkbox" id="include-details-in-pdf" checked class="rounded text-indigo-600">
+ <span>QR & Link ST/SS</span>
+ </label>
+ </div>
+ </div>
+
+ <!-- TASTI DI STAMPA & CONDIVISIONE SEMPRE VISIBILI ANCHE SU 1366x768 -->
+ <div class="grid grid-cols-12 gap-1.5">
+ <button onclick="generateAndPrintQuote()" class="col-span-5 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1.5" title="Salva l'offerta e genera il PDF con QR Code e tasti link ST/SS">
+ <i class="fa-solid fa-print"></i> <span>Stampa PDF</span>
+ </button>
+ <button onclick="openEmailShareModal()" class="col-span-4 px-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1.5" title="Invia offerta via Email con link diretti ST/SS">
+ <i class="fa-solid fa-envelope"></i> <span>Invia Email</span>
+ </button>
+ <button onclick="saveQuoteOnly()" class="col-span-3 px-2 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1" title="Salva nello storico">
+ <i class="fa-solid fa-floppy-disk"></i> <span>Salva</span>
+ </button>
+ </div>
+ </div>
+ </div>
+ </section>
+
+ <!-- ==================== TAB 2: IMMAGINI FAMIGLIE (SOLO TONYUS) ==================== -->
+ <section id="tab-families" class="admin-only-tonyus hidden space-y-6">
+ <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+ <div>
+ <h2 class="text-lg font-bold text-slate-900">Copertine Famiglie e Sottofamiglie</h2>
+ <p class="text-xs text-slate-500 mt-0.5">Area riservata a <strong>Tonyus</strong>: carica o abbina le immagini di intestazione per ogni Famiglia e Sottofamiglia.</p>
+ </div>
+ </div>
+ <div id="family-media-manager" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+ </section>
+
+ <!-- ==================== TAB 3: ALIMENTAZIONE LISTINO & IMPORT LINK DRIVE (SOLO TONYUS) ==================== -->
+ <section id="tab-manage" class="admin-only-tonyus hidden space-y-6">
+ <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+ <div>
+ <h2 class="text-lg font-bold text-slate-900">Alimentazione Listino, Link Google Drive & Sincronizzazione</h2>
+ <p class="text-xs text-slate-500 mt-0.5">Area riservata a <strong>Tonyus</strong>: importa il listino CSV, collega il CSV Google Apps Script (<code>NomeFile;Tipo;Codice;LinkDrive</code>) per <strong>ST</strong>, <strong>SS</strong> e <strong>IMG</strong>, oppure modifica i singoli articoli.</p>
+ </div>
+ <div class="flex flex-wrap items-center gap-2">
+ <button onclick="openProductModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+ <i class="fa-solid fa-plus"></i> Nuovo Articolo
+ </button>
+ <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+ <i class="fa-solid fa-file-import"></i> Importa Listino (CSV/JSON)
+ <input type="file" id="import-file-input" accept=".csv,.json" onchange="handleFileImport(event)" class="hidden" />
+ </label>
+ <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5" title="Carica il CSV con i link diretti Drive per ST, SS e IMG">
+ <i class="fa-brands fa-google-drive"></i> Importa Link Drive (CSV)
+ <input type="file" id="import-drive-links-input" accept=".csv" onchange="handleDriveLinksImport(event)" class="hidden" />
+ </label>
+ <button onclick="exportCatalogCSV()" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-2.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5">
+ <i class="fa-solid fa-file-csv text-emerald-600"></i> CSV
+ </button>
+ <button onclick="exportCatalogJSON()" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-2.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5">
+ <i class="fa-solid fa-download text-indigo-600"></i> JSON
+ </button>
+ </div>
+ </div>
+
+ <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+ <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+ <input type="text" id="manage-search" oninput="renderManageTable()" placeholder="Filtra tabella per codice, alias, descrizione o famiglia..." class="w-full sm:w-96 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+ <div class="flex items-center gap-3">
+ <span id="manage-count-label" class="text-xs font-medium text-slate-500"></span>
+ <button onclick="clearCatalogData()" class="text-xs text-rose-600 hover:underline font-medium">Svuota Catalogo</button>
+ </div>
+ </div>
+ <div class="overflow-x-auto">
+ <table class="w-full text-left border-collapse">
+ <thead>
+ <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+ <th class="py-3 px-4">Codice / Alias</th>
+ <th class="py-3 px-4">Descrizione, Stato & Link ST/SS/IMG</th>
+ <th class="py-3 px-4">Famiglia / Sottofamiglia</th>
+ <th class="py-3 px-4 text-right">Netto Acquisto</th>
+ <th class="py-3 px-4 text-right">Listino Vendita</th>
+ <th class="py-3 px-4 text-right">Azioni</th>
+ </tr>
+ </thead>
+ <tbody id="manage-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+ </table>
+ </div>
+ </div>
+ </section>
+
+ <!-- ==================== TAB 4: STORICO OFFERTE ==================== -->
+ <section id="tab-history" class="hidden space-y-6">
+ <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+ <div>
+ <h2 class="text-lg font-bold text-slate-900">Storico Offerte Generate</h2>
+ <p class="text-sm text-slate-500">Riapri un preventivo per ristamparlo in PDF (con QR Code e pulsanti link ST/SS), inviarlo via email, duplicarlo o eliminarlo.</p>
+ </div>
+ <button id="btn-clear-history" onclick="clearAllHistory()" class="hidden px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 self-start sm:self-auto">
+ <i class="fa-solid fa-trash-can"></i> Svuota Storico
+ </button>
+ </div>
+ <div id="history-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+ </section>
+
+ <!-- ==================== TAB 5: IMPOSTAZIONI AZIENDA & CLOUD ==================== -->
+ <section id="tab-settings" class="hidden max-w-3xl mx-auto">
+ <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+ <div class="border-b border-slate-100 pb-4">
+ <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+ <i class="fa-solid fa-building text-indigo-600"></i> Intestazione Società & Logo
+ </h2>
+ <p class="text-xs text-slate-500 mt-1">Configura i dati aziendali che appariranno sulle offerte commerciali e sulle stampe PDF.</p>
+ </div>
+
+ <!-- CONFIGURAZIONE CLOUD VISIBILE SOLO A TONYUS -->
+ <div class="admin-only-tonyus hidden bg-indigo-50/80 p-4 rounded-xl border border-indigo-200 space-y-2">
+ <div class="flex items-center justify-between">
+ <label class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+ <i class="fa-brands fa-google-drive text-indigo-600"></i> URL Web App Google Apps Script (Memoria Condivisa su Drive)
+ </label>
+ <button type="button" onclick="toggleGasGuide()" class="text-[11px] font-semibold text-indigo-700 underline">Come crearlo in 2 minuti</button>
+ </div>
+ <input type="url" id="set-cloud-api-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-mono" />
+ <div id="gas-guide-box" class="hidden mt-2 p-3 bg-white rounded-lg border border-indigo-200 text-[11px] text-slate-700 space-y-2">
+ <p class="font-bold text-slate-900">Procedura rapida su Google Drive:</p>
+ <ol class="list-decimal pl-4 space-y-1">
+ <li>Crea un nuovo <strong>Foglio Google</strong> sul tuo Drive e rinomina il primo foglio in <code>DB</code>.</li>
+ <li>Dal menu in alto vai su <strong>Estensioni &gt; Apps Script</strong>, incolla lo script qui sotto e salva.</li>
+ <li>Clicca su <strong>Esegui deployment &gt; Nuovo deployment &gt; App web</strong>, imposta <em>Chi può accedere: Chiunque</em> e copia l'URL <code>/exec</code> qui sopra.</li>
+ </ol>
+ <pre class="bg-slate-900 text-emerald-300 p-2.5 rounded text-[10px] overflow-x-auto select-all">function doGet(e) {
+ var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB');
+ var val = ss.getRange('A1').getValue() || '{}';
+ return ContentService.createTextOutput(val).setMimeType(ContentService.MimeType.JSON);
+}
+function doPost(e) {
+ var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DB');
+ ss.getRange('A1').setValue(e.postData.contents);
+ return ContentService.createTextOutput('{"status":"ok"}').setMimeType(ContentService.MimeType.JSON);
+}</pre>
+ </div>
+ </div>
+
+ <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center gap-5">
+ <div class="w-40 h-24 bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center overflow-hidden shrink-0">
+ <img id="settings-logo-preview" src="" alt="Anteprima Logo" class="max-h-full max-w-full w-auto h-auto object-contain hidden" />
+ <div id="settings-logo-placeholder" class="text-center text-slate-400 text-xs">
+ <i class="fa-regular fa-image text-2xl mb-1 block"></i>
+ <span>Nessun Logo</span>
+ </div>
+ </div>
+ <div class="flex-1 space-y-2 text-center sm:text-left">
+ <h3 class="text-sm font-bold text-slate-800">Logo Aziendale</h3>
+ <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+ <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5">
+ <i class="fa-solid fa-upload"></i> Carica Logo
+ <input type="file" id="logo-file-input" accept="image/*" onchange="handleLogoUpload(event)" class="hidden" />
+ </label>
+ <button type="button" onclick="removeCompanyLogo()" id="btn-remove-logo" class="hidden px-3 py-2 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-medium transition">
+ <i class="fa-solid fa-trash"></i> Rimuovi
+ </button>
+ </div>
+ </div>
+ </div>
+
+ <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ <div class="sm:col-span-2">
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Ragione Sociale *</label>
+ <input type="text" id="set-company-name" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ <div class="sm:col-span-2">
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Sottotitolo / Attività</label>
+ <input type="text" id="set-company-tagline" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Partita IVA / Codice Fiscale</label>
+ <input type="text" id="set-company-vat" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Telefono / Email / Sito Web</label>
+ <input type="text" id="set-company-contact" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ <div class="sm:col-span-2">
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Indirizzo Sede</label>
+ <input type="text" id="set-company-address" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ <div class="admin-only-tonyus hidden sm:col-span-2 bg-blue-50/70 p-4 rounded-xl border border-blue-200 space-y-1.5">
+ <label class="block text-xs font-bold text-blue-900">URL Base Pubblico Schede ST / SS (opzionale, solo se non usi i link singoli Drive)</label>
+ <input type="url" id="set-docs-base-url" placeholder="Es. https://www.tuosito.it/schede/" class="w-full px-3.5 py-2 bg-white border border-blue-200 rounded-xl text-xs" />
+ </div>
+ </div>
+
+ <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
+ <button type="button" onclick="switchTab('catalog')" class="text-xs font-medium text-slate-500 hover:text-slate-700">
+ <i class="fa-solid fa-arrow-left mr-1"></i> Torna alle Offerte
+ </button>
+ <button onclick="saveCompanySettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm">
+ <i class="fa-solid fa-check mr-1.5"></i> Salva Impostazioni
+ </button>
+ </div>
+ </div>
+ </section>
+
+ </main>
+
+ <!-- MODALE OPZIONI STAMPA CATALOGO (FUNZIONE ACCESSORIA CON SELEZIONE FAMIGLIA) -->
+ <div id="catalog-print-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+ <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+ <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+ <h3 class="font-bold text-sm flex items-center gap-2">
+ <i class="fa-solid fa-book-open text-indigo-400"></i> Stampa / Esporta PDF Catalogo Prodotti
+ </h3>
+ <button onclick="closeCatalogPrintModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+ </div>
+ <div class="p-5 space-y-4 text-xs">
+ <div>
+ <label class="block font-bold text-slate-700 mb-1">Seleziona Famiglia Prodotti *</label>
+ <select id="print-cat-family" onchange="updatePrintModalSubfamilies()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+ <option value="ALL">Tutte le Famiglie</option>
+ </select>
+ </div>
+ <div>
+ <label class="block font-bold text-slate-700 mb-1">Sottofamiglia (opzionale)</label>
+ <select id="print-cat-subfamily" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+ <option value="ALL">Tutte le Sottofamiglie</option>
+ </select>
+ </div>
+ <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+ <p class="font-bold text-slate-800">Layout editoriale arioso (4 schede grandi per pagina):</p>
+ <ul class="text-[11px] text-slate-600 space-y-1 pl-4 list-disc">
+ <li>Immagine prodotto grande ad alta visibilità e prezzo di vendita</li>
+ <li>Doppio QR Code distinto con dicitura <strong>ST</strong> e <strong>SS</strong> (per scansione su carta)</li>
+ <li>Tasti cliccabili <strong>Apri Scheda Tecnica (ST)</strong> e <strong>Apri Scheda Sicurezza (SS)</strong> (attivi nei PDF condivisi)</li>
+ </ul>
+ </div>
+ <div class="flex justify-end gap-2 pt-2">
+ <button type="button" onclick="closeCatalogPrintModal()" class="px-4 py-2 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Annulla</button>
+ <button type="button" onclick="executeCatalogPrint()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-sm flex items-center gap-1.5">
+ <i class="fa-solid fa-print"></i> Genera Stampa / PDF
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- MODALE PRODOTTO (SOLO TONYUS) -->
+ <div id="product-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+ <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col">
+ <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+ <h3 id="modal-title" class="font-bold text-slate-900">Nuovo Articolo</h3>
+ <button onclick="closeProductModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+ </div>
+ <form id="product-form" onsubmit="saveProductFromModal(event)" class="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+ <input type="hidden" id="prod-edit-index" value="-1" />
+ <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Codice Articolo *</label>
+ <input type="text" id="prod-sku" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm uppercase" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Codice Interno / Alias *</label>
+ <input type="text" id="prod-alias" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm uppercase" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Famiglia</label>
+ <input type="text" id="prod-category" placeholder="Es. Chimico, Carta" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Sottofamiglia</label>
+ <input type="text" id="prod-subcategory" placeholder="Es. Chimico Ecolabel" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Descrizione Articolo *</label>
+ <input type="text" id="prod-name" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Indicazioni Uso / Materiale</label>
+ <textarea id="prod-tech-desc" rows="2" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs"></textarea>
+ </div>
+ <div class="grid grid-cols-4 gap-3">
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Netto Acq. (€)</label>
+ <input type="number" id="prod-cost-net" step="0.0001" min="0" value="0" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Listino (€) *</label>
+ <input type="number" id="prod-price" step="0.01" min="0" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">UM</label>
+ <input type="text" id="prod-unit" value="PZ" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm uppercase" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Stato</label>
+ <select id="prod-status" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm">
+ <option value="In uso">In uso</option>
+ <option value="In esaurimento">In esaurimento</option>
+ <option value="A richiesta">A richiesta</option>
+ </select>
+ </div>
+ </div>
+
+ <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+ <span class="text-xs font-bold text-slate-700 block"><i class="fa-brands fa-google-drive text-indigo-600 mr-1"></i> Link Google Drive o Nomi File</span>
+ <div>
+ <label class="block text-[11px] font-semibold text-slate-600 mb-1">URL Immagine Prodotto</label>
+ <input type="text" id="prod-image" placeholder="https://drive.google.com/... o CODICE.jpg" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
+ </div>
+ <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <div>
+ <label class="block text-[11px] font-semibold text-blue-700 mb-1">Link Scheda Tecnica (ST)</label>
+ <input type="text" id="prod-st" placeholder="https://drive.google.com/..." class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
+ </div>
+ <div>
+ <label class="block text-[11px] font-semibold text-amber-700 mb-1">Link Scheda Sicurezza (SS)</label>
+ <input type="text" id="prod-sds" placeholder="https://drive.google.com/..." class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
+ </div>
+ </div>
+ </div>
+
+ <div class="pt-2 flex justify-end gap-2">
+ <button type="button" onclick="closeProductModal()" class="px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-600">Annulla</button>
+ <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm">Salva Articolo</button>
+ </div>
+ </form>
+ </div>
+ </div>
+
+ <!-- MODALE INVIO EMAIL / LINK OFFERTA AL CLIENTE -->
+ <div id="email-share-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+ <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col">
+ <div class="px-6 py-4 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+ <h3 class="font-bold text-emerald-950 flex items-center gap-2">
+ <i class="fa-solid fa-paper-plane text-emerald-600"></i> Invia Offerta via Email / Link al Cliente
+ </h3>
+ <button onclick="closeEmailShareModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+ </div>
+ <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar text-sm">
+ <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Email Destinatario</label>
+ <input type="email" id="share-email-to" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs" />
+ </div>
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Oggetto Email</label>
+ <input type="text" id="share-email-subject" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium" />
+ </div>
+ </div>
+
+ <div class="bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-200 space-y-2">
+ <div class="flex items-center justify-between">
+ <span class="text-xs font-bold text-indigo-950"><i class="fa-solid fa-link mr-1 text-indigo-600"></i> Link Interattivo Offerta (con pulsanti download ST e SS)</span>
+ <button type="button" onclick="copyShareLink()" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-semibold">
+ <i class="fa-regular fa-copy mr-1"></i> Copia Link
+ </button>
+ </div>
+ <input type="text" id="share-offer-url" readonly class="w-full px-3 py-1.5 bg-white border border-indigo-200 rounded-lg text-[11px] font-mono text-slate-600" />
+ </div>
+
+ <div>
+ <label class="block text-xs font-semibold text-slate-600 mb-1">Testo Email (con link diretti ST e SS)</label>
+ <textarea id="share-email-body" rows="8" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-mono leading-relaxed bg-slate-50"></textarea>
+ </div>
+
+ <div class="pt-2 border-t border-slate-100 flex flex-wrap justify-between items-center gap-2">
+ <button type="button" onclick="downloadClientOfferHtml()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+ <i class="fa-solid fa-file-code text-indigo-600"></i> Scarica Allegato (.html)
+ </button>
+ <div class="flex items-center gap-2">
+ <button type="button" onclick="copyEmailText()" class="px-3.5 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold">Copia Testo</button>
+ <button type="button" onclick="launchMailClient()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm flex items-center gap-1.5">
+ <i class="fa-solid fa-envelope-open-text"></i> Apri Email
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- VISTA CLIENTE DA LINK CONDIVISO (?offerta=...) -->
+ <div id="shared-offer-viewer" class="hidden min-h-screen bg-slate-100 py-8 px-4 no-print"></div>
+
+ <!-- AREA DI STAMPA PDF -->
+ <div id="print-area" class="hidden"></div>
+
+ <!-- TOAST -->
+ <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2.5 no-print">
+ <i class="fa-solid fa-circle-check text-emerald-400"></i>
+ <span id="toast-msg">Operazione completata</span>
+ </div>
+
+ <script>
+ // ==================== STATO APPLICATIVO ====================
+ const STORAGE_KEY = 'b2b_portal_unified_v2';
+ const AUTH_SESSION_KEY = 'b2b_agent_session_v2';
+ const SHARED_PASSWORD = 'Offerte';
+ const ADMIN_USERNAME = 'tonyus';
+
+ let catalog = [];
+ let currentQuote = [];
+ let quoteHistory = [];
+ let customFamilyImages = {};
+ let companyInfo = {
+ name: "La Tua Azienda S.r.l.",
+ tagline: "",
+ vat: "P.IVA 00000000000",
+ contact: "info@azienda.it | Tel. 02 0000000",
+ address: "Via Roma 1, Milano (MI)",
+ logo: "",
+ docsBaseUrl: "",
+ cloudApiUrl: ""
+ };
+
+ let localFileIndex = {};
+ let localFolderFiles = [];
+ let stTextCache = {};
+ let stExtractionQueue = new Set();
+ let activeShareRecord = null;
+ let currentPage = 1;
+ const ITEMS_PER_PAGE = 30;
+
+ const FAMILY_IMAGE_KEYWORDS = {
+ 'attrezzature pulizia': ['attrezzi'],
+ 'carta': ['carta'],
+ 'chimico': ['detergenza'],
+ 'dispenser': ['dispenser', 'dispenser 2'],
+ 'monouso': ['delivery', 'conservazione'],
+ 'linea cortesia': ['cortesia'],
+ 'macchinari': ['macchinari'],
+ 'guanti': ['guanti'],
+ 'sacchi': ['sacchi']
+ };
+
+ const SUBFAMILY_IMAGE_KEYWORDS = {
+ 'chimico ecolabel': ['detergenza 2', 'detergenza'],
+ 'chimico professional': ['detergenza'],
+ 'contenitori monouso': ['conservazione', 'delivery'],
+ 'attrezzatura monouso': ['delivery'],
+ 'dispenser': ['dispenser 2', 'dispenser']
+ };
+
+ const FAMILY_GRADIENTS = {
+ 'Attrezzature Pulizia': 'from-sky-50 to-blue-100 border-sky-200 text-sky-900',
+ 'Carta': 'from-amber-50 to-orange-100 border-amber-200 text-amber-900',
+ 'Chimico': 'from-emerald-50 to-teal-100 border-emerald-200 text-emerald-900',
+ 'Dispenser': 'from-slate-100 to-zinc-200 border-slate-300 text-slate-900',
+ 'Monouso': 'from-orange-50 to-amber-100 border-orange-200 text-orange-900',
+ 'Guanti': 'from-cyan-50 to-sky-100 border-cyan-200 text-cyan-900',
+ 'Linea Cortesia': 'from-purple-50 to-indigo-100 border-purple-200 text-purple-900',
+ 'Macchinari': 'from-indigo-50 to-slate-200 border-indigo-200 text-indigo-900',
+ 'Sacchi': 'from-lime-50 to-green-100 border-lime-200 text-lime-900'
+ };
+
+ const FAMILY_ICONS = {
+ 'Attrezzature Pulizia': 'fa-broom',
+ 'Carta': 'fa-scroll',
+ 'Chimico': 'fa-flask',
+ 'Dispenser': 'fa-soap',
+ 'Monouso': 'fa-box-open',
+ 'Guanti': 'fa-mitten',
+ 'Linea Cortesia': 'fa-hotel',
+ 'Macchinari': 'fa-gears',
+ 'Sacchi': 'fa-bag-shopping'
+ };
+
+ // ==================== INIZIALIZZAZIONE & AUTENTICAZIONE ====================
+ document.addEventListener('DOMContentLoaded', async () => {
+ const urlParams = new URLSearchParams(window.location.search);
+ const sharedPayload = urlParams.get('offerta');
+ if (sharedPayload) {
+ document.getElementById('login-screen').classList.add('hidden');
+ renderSharedOfferPage(sharedPayload);
+ return;
+ }
+
+ loadLocalState();
+
+ const savedAgent = sessionStorage.getItem(AUTH_SESSION_KEY);
+ if (savedAgent) {
+ unlockPortalForAgent(savedAgent);
+ }
+ });
+
+ function isTonyusAdmin(agentName) {
+ const name = String(agentName !== undefined ? agentName : (sessionStorage.getItem(AUTH_SESSION_KEY) || '')).trim().toLowerCase();
+ return name === ADMIN_USERNAME;
+ }
+
+ function applyRoleVisibility(agentName) {
+ const isAdmin = isTonyusAdmin(agentName);
+ document.querySelectorAll('.admin-only-tonyus').forEach(el => {
+ if (isAdmin) {
+ el.classList.remove('hidden');
+ if (el.tagName === 'BUTTON' || el.tagName === 'LABEL') {
+ el.classList.add('flex');
+ }
+ } else {
+ el.classList.add('hidden');
+ el.classList.remove('flex');
+ }
+ });
+ }
+
+ function handleAgentLogin(e) {
+ e.preventDefault();
+ const agentName = document.getElementById('login-agent-name').value.trim();
+ const pwd = document.getElementById('login-password').value;
+
+ if (!agentName) return;
+ if (pwd !== SHARED_PASSWORD) {
+ document.getElementById('login-error').classList.remove('hidden');
+ return;
+ }
+
+ document.getElementById('login-error').classList.add('hidden');
+ sessionStorage.setItem(AUTH_SESSION_KEY, agentName);
+ unlockPortalForAgent(agentName);
+ }
+
+ async function unlockPortalForAgent(agentName) {
+ document.getElementById('login-screen').classList.add('hidden');
+ document.getElementById('app-header').classList.remove('hidden');
+ document.getElementById('app-main').classList.remove('hidden');
+ document.getElementById('logged-agent-badge').textContent = agentName;
+
+ applyRoleVisibility(agentName);
+
+ const d = new Date();
+ d.setDate(d.getDate() + 30);
+ document.getElementById('quote-valid-until').value = d.toISOString().split('T')[0];
+ if (!document.getElementById('quote-agent').value) {
+ document.getElementById('quote-agent').value = agentName;
+ }
+
+ if (companyInfo.cloudApiUrl) {
+ document.getElementById('btn-cloud-sync').classList.remove('hidden');
+ document.getElementById('btn-cloud-sync').classList.add('flex');
+ await syncFromGoogleCloud(false);
+ }
+
+ refreshAllUI();
+ }
+
+ function logoutAgent() {
+ sessionStorage.removeItem(AUTH_SESSION_KEY);
+ location.reload();
+ }
+
+ // ==================== PERSISTENZA LOCALE + SINCRONIZZAZIONE CLOUD DRIVE ====================
+ function loadLocalState() {
+ try {
+ const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+ if (raw) {
+ catalog = raw.catalog || [];
+ currentQuote = raw.currentQuote || [];
+ quoteHistory = raw.quoteHistory || [];
+ customFamilyImages = raw.customFamilyImages || {};
+ companyInfo = { ...companyInfo, ...(raw.companyInfo || {}) };
+ }
+ } catch (e) {
+ console.warn("Errore lettura cache locale", e);
+ }
+ }
+
+ async function saveAllState(pushToCloud = true) {
+ const stateBundle = {
+ catalog,
+ currentQuote,
+ quoteHistory,
+ customFamilyImages,
+ companyInfo
+ };
+ localStorage.setItem(STORAGE_KEY, JSON.stringify(stateBundle));
+
+ if (pushToCloud && companyInfo.cloudApiUrl && companyInfo.cloudApiUrl.startsWith('http')) {
+ try {
+ const cloudPayload = {
+ catalog,
+ quoteHistory,
+ customFamilyImages,
+ companyInfo
+ };
+ await fetch(companyInfo.cloudApiUrl, {
+ method: 'POST',
+ body: JSON.stringify(cloudPayload)
+ });
+ } catch (err) {
+ console.warn("Sincronizzazione Cloud Drive non riuscita:", err);
+ }
+ }
+ }
+
+ async function syncFromGoogleCloud(notify = true) {
+ if (!companyInfo.cloudApiUrl) return;
+ try {
+ if (notify) showToast("Sincronizzazione con Google Drive in corso...");
+ const res = await fetch(companyInfo.cloudApiUrl);
+ const data = await res.json();
+ if (data && typeof data === 'object') {
+ if (Array.isArray(data.catalog)) catalog = data.catalog;
+ if (Array.isArray(data.quoteHistory)) quoteHistory = data.quoteHistory;
+ if (data.customFamilyImages) customFamilyImages = data.customFamilyImages;
+ if (data.companyInfo) {
+ const currentUrl = companyInfo.cloudApiUrl;
+ companyInfo = { ...companyInfo, ...data.companyInfo, cloudApiUrl: currentUrl };
+ }
+ await saveAllState(false);
+ refreshAllUI();
+ if (notify) showToast("Dati aggiornati da Google Drive!");
+ }
+ } catch (err) {
+ if (notify) showToast("Errore connessione al Cloud Google Drive.");
+ }
+ }
+
+ function refreshAllUI() {
+ applyRoleVisibility();
+ loadSettingsFields();
+ updateCompanyBrandingUI();
+ populateFilters();
+ renderFamiliesShowcase();
+ renderSubfamiliesShowcase();
+ renderCatalog();
+ renderQuote();
+ renderHistory();
+ renderManageTable();
+ }
+
+ function showToast(msg) {
+ const t = document.getElementById('toast');
+ document.getElementById('toast-msg').textContent = msg;
+ t.classList.remove('translate-y-20', 'opacity-0');
+ setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 3500);
+ }
+
+ function formatCurrency(val, decimals = 2) {
+ return new Intl.NumberFormat('it-IT', {
+ style: 'currency',
+ currency: 'EUR',
+ minimumFractionDigits: decimals,
+ maximumFractionDigits: decimals
+ }).format(val || 0);
+ }
+
+ function escapeHtml(str) {
+ return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+ }
+
+ function normalizeToken(str) {
+ return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+ }
+
+ // ==================== CONVERSIONE LINK IMMAGINI DRIVE & RISOLUZIONE ASSET ====================
+ function convertDriveImageUrl(url) {
+ if (!url) return '';
+ const trimmed = url.trim();
+ const matchId = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+ if (matchId && trimmed.includes('drive.google.com')) {
+ return `https://drive.google.com/thumbnail?id=${matchId[1]}&sz=w800`;
+ }
+ return trimmed;
+ }
+
+ function isSecuritySheetFile(baseName, normBase, normSku, normAlias) {
+ if (/^ss([^a-z0-9]|$)/i.test(baseName)) return true;
+ if (normSku && (normBase.startsWith('ss' + normSku) || normBase.endsWith(normSku + 'ss'))) return true;
+ if (normAlias && (normBase.startsWith('ss' + normAlias) || normBase.endsWith(normAlias + 'ss'))) return true;
+ return /(^|[^a-z0-9])(ss|sds|msds|sicurezza|schedasicurezza)([^a-z0-9]|$)/i.test(baseName);
+ }
+
+ function findInLocalFolder(prod, type) {
+ if (!localFolderFiles.length) return null;
+ const rawSku = String(prod.sku || '').trim().toLowerCase();
+ const normSku = normalizeToken(prod.sku);
+ const rawAlias = String(prod.alias || '').trim().toLowerCase();
+ const normAlias = normalizeToken(prod.alias);
+ const imgExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+ const matchesCode = (f, rawCode, normCode) => {
+ if (!normCode) return false;
+ if (f.normBase === normCode || f.baseName === rawCode) return true;
+ if (f.normBase === 'st' + normCode || f.normBase === 'ss' + normCode) return true;
+ const tokens = f.baseName.split(/[^a-z0-9]+/).filter(Boolean);
+ if (tokens.includes(normCode) || tokens.includes('st' + normCode) || tokens.includes('ss' + normCode)) return true;
+ return normCode.length >= 3 && (f.normBase.includes(normCode) || f.baseName.includes(rawCode));
+ };
+
+ const candidates = localFolderFiles.filter(f => {
+ if (type === 'image' && !imgExts.includes(f.ext)) return false;
+ if (type !== 'image' && f.ext !== '.pdf') return false;
+ if (!matchesCode(f, rawSku, normSku) && !matchesCode(f, rawAlias, normAlias)) return false;
+ const isSs = isSecuritySheetFile(f.baseName, f.normBase, normSku, normAlias);
+ return type === 'sds' ? isSs : (type === 'st' ? !isSs : true);
+ });
+
+ return candidates.length ? candidates[0] : null;
+ }
+
+ function resolveProductAsset(prod, type) {
+ if (!prod) return { url: '', fallbackUrl: '', file: null, fileName: '' };
+ const explicitPath = type === 'image' ? prod.image : (type === 'st' ? prod.stUrl : prod.sdsUrl);
+ const localMatch = findInLocalFolder(prod, type);
+ const localFallbackUrl = localMatch ? localMatch.url : '';
+
+ if (explicitPath && (explicitPath.startsWith('http://') || explicitPath.startsWith('https://') || explicitPath.startsWith('data:'))) {
+ const finalUrl = type === 'image' ? convertDriveImageUrl(explicitPath) : explicitPath.trim();
+ return {
+ url: finalUrl,
+ fallbackUrl: localFallbackUrl,
+ file: null,
+ fileName: explicitPath.trim().split('/').pop()
+ };
+ }
+
+ if (localMatch) {
+ return { url: localMatch.url, fallbackUrl: '', file: localMatch.file, fileName: localMatch.originalName };
+ }
+
+ const baseUrl = (companyInfo.docsBaseUrl || '').trim();
+ if (baseUrl && type !== 'image') {
+ const normalizedBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+ if (explicitPath) return { url: normalizedBase + encodeURIComponent(explicitPath.trim()), fallbackUrl: '', file: null, fileName: explicitPath.trim() };
+ }
+
+ return { url: '', fallbackUrl: '', file: null, fileName: '' };
+ }
+
+ function resolvePublicDocUrl(prod, type) {
+ const explicitPath = type === 'st' ? prod.stUrl : prod.sdsUrl;
+ if (explicitPath && (explicitPath.startsWith('http://') || explicitPath.startsWith('https://'))) {
+ return explicitPath.trim();
+ }
+ const asset = resolveProductAsset(prod, type);
+ if (asset.url && (asset.url.startsWith('http://') || asset.url.startsWith('https://'))) {
+ return asset.url;
+ }
+ const baseUrl = (companyInfo.docsBaseUrl || '').trim();
+ if (baseUrl) {
+ const normalizedBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+ if (asset.fileName) return normalizedBase + encodeURIComponent(asset.fileName);
+ if (explicitPath) return normalizedBase + encodeURIComponent(explicitPath.trim());
+ }
+ return '';
+ }
+
+ function generateQrDataUrl(text, size = 84) {
+ if (!text || !window.QRCode) return '';
+ const tempDiv = document.createElement('div');
+ new QRCode(tempDiv, {
+ text: text,
+ width: size,
+ height: size,
+ colorDark: '#0f172a',
+ colorLight: '#ffffff',
+ correctLevel: QRCode.CorrectLevel.M
+ });
+ const canvas = tempDiv.querySelector('canvas');
+ return canvas ? canvas.toDataURL('image/png') : '';
+ }
+
+ function handleLocalFolderMount(event) {
+ if (!isTonyusAdmin()) return;
+ const files = Array.from(event.target.files);
+ if (!files.length) return;
+ localFolderFiles.forEach(entry => { if (entry.url) URL.revokeObjectURL(entry.url); });
+ localFileIndex = {};
+ localFolderFiles = [];
+ stTextCache = {};
+ stExtractionQueue.clear();
+
+ files.forEach(file => {
+ const rawRelPath = file.webkitRelativePath || file.name;
+ const parts = rawRelPath.split('/');
+ const relPath = parts.length > 1 ? parts.slice(1).join('/') : file.name;
+ const lowerRel = relPath.toLowerCase();
+ const lowerName = file.name.toLowerCase();
+ const dotIdx = lowerName.lastIndexOf('.');
+ const ext = dotIdx !== -1 ? lowerName.slice(dotIdx) : '';
+ const baseNameNoExt = dotIdx !== -1 ? lowerName.slice(0, dotIdx) : lowerName;
+ const url = URL.createObjectURL(file);
+ localFileIndex[lowerRel] = url;
+ localFileIndex[lowerName] = url;
+ localFolderFiles.push({
+ file, url, relPath: lowerRel, name: lowerName,
+ originalName: file.name, baseName: baseNameNoExt,
+ normBase: normalizeToken(baseNameNoExt), ext
+ });
+ });
+
+ document.getElementById('folder-status-text').textContent = `${files.length} file locali`;
+ showToast(`Cartella collegata (${files.length} file)!`);
+ refreshAllUI();
+ }
+
+ // ==================== CERTIFICAZIONI & ESTRAZIONE SCHEDE TECNICHE ====================
+ function getProductCertifications(prod, parsedSt = null) {
+ const haystack = [
+ prod.category || '',
+ prod.subCategory || '',
+ prod.name || '',
+ prod.techDesc || '',
+ parsedSt ? parsedSt.description : ''
+ ].join(' ');
+ const isEcolabel = (parsedSt && parsedSt.isEcolabel) || /\b(eu\s*)?ecolabel\b/i.test(haystack);
+ const isPmc = (parsedSt && parsedSt.isPmc) || /\bp\.?\s*m\.?\s*c\.?\b|presidio\s+medico[-\s]+chirurgico|aut\.?\s*min/i.test(haystack);
+ return { isEcolabel, isPmc };
+ }
+
+ function renderCertBadgesHtml(certs) {
+ if (!certs || (!certs.isEcolabel && !certs.isPmc)) return '';
+ return `
+ ${certs.isEcolabel ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold shadow-sm"><i class="fa-solid fa-leaf text-[9px]"></i> ECOLABEL</span>` : ''}
+ ${certs.isPmc ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-bold shadow-sm"><i class="fa-solid fa-shield-halved text-[9px]"></i> PMC</span>` : ''}
+ `;
+ }
+
+ function parseTechnicalSheetData(pagesData, fullText, prod) {
+ const combined = [fullText, prod ? prod.name : '', prod ? prod.subCategory : ''].join(' ');
+ const isEcolabel = /\b(eu\s*)?ecolabel\b/i.test(combined);
+ const isPmc = /\bp\.?\s*m\.?\s*c\.?\b|presidio\s+medico[-\s]+chirurgico|aut\.?\s*min/i.test(combined);
+ let lines = pagesData.flatMap(p => p.lines || []);
+ const cleanLines = lines
+ .map(l => l.replace(/^[■▪•●◆►▸\-–—*]+\s*/g, '').replace(/\s+/g, ' ').trim())
+ .filter(l => l.length >= 16 && !/^(scheda\s+tecnica|rev\.|pagina\s+\d|p\.?\s*iva|tel\.|www\.|http)/i.test(l));
+ let description = cleanLines.slice(0, 3).join('. ');
+ if (description.length > 240) description = description.slice(0, 237).replace(/\s+\S*$/, '') + '...';
+ return { description, isEcolabel, isPmc };
+ }
+
+ async function extractStPreviewText(sku, stAsset) {
+ if (!stAsset || !stAsset.url || stTextCache[sku] !== undefined || stExtractionQueue.has(sku) || !window.pdfjsLib) return;
+ if (!stAsset.file && stAsset.url.includes('drive.google.com')) return;
+
+ stExtractionQueue.add(sku);
+ try {
+ const loadingTask = stAsset.file
+ ? pdfjsLib.getDocument({ data: await stAsset.file.arrayBuffer() })
+ : pdfjsLib.getDocument(stAsset.url);
+ const pdf = await loadingTask.promise;
+ let pagesData = [];
+ for (let pNum = 1; pNum <= Math.min(pdf.numPages, 2); pNum++) {
+ const page = await pdf.getPage(pNum);
+ const tc = await page.getTextContent();
+ const text = tc.items.map(i => i.str).join(' ');
+ pagesData.push({ lines: text.split(/\.\s+/), text });
+ }
+ const prod = catalog.find(p => p.sku === sku);
+ stTextCache[sku] = parseTechnicalSheetData(pagesData, pagesData.map(p => p.text).join(' '), prod);
+ } catch {
+ stTextCache[sku] = { description: '', isEcolabel: false, isPmc: false };
+ } finally {
+ stExtractionQueue.delete(sku);
+ const domId = 'st-preview-' + sku.replace(/[^a-zA-Z0-9_-]/g, '_');
+ const el = document.getElementById(domId);
+ if (el && stTextCache[sku].description) {
+ el.innerHTML = `<p class="text-[11px] text-slate-700 leading-snug line-clamp-3">${escapeHtml(stTextCache[sku].description)}</p>`;
+ el.classList.remove('hidden');
+ }
+ }
+ }
+
+ // ==================== VETRINA FAMIGLIE (ACCESSORIA), SOTTOFAMIGLIE E FILTRI ====================
+ function toggleFamiliesDrawer() {
+ const drawer = document.getElementById('families-drawer');
+ drawer.classList.toggle('hidden');
+ }
+
+ function resolveCategoryImage(family, subFamily = '') {
+ const key = subFamily ? `${family}::${subFamily}` : family;
+ if (customFamilyImages[key]) return convertDriveImageUrl(customFamilyImages[key]);
+
+ const imgExts = ['.png', '.jpg', '.jpeg', '.webp'];
+ if (localFolderFiles.length) {
+ const keywords = subFamily
+ ? (SUBFAMILY_IMAGE_KEYWORDS[subFamily.toLowerCase()] || FAMILY_IMAGE_KEYWORDS[family.toLowerCase()] || [subFamily.toLowerCase()])
+ : (FAMILY_IMAGE_KEYWORDS[family.toLowerCase()] || [family.toLowerCase()]);
+
+ for (const kw of keywords) {
+ const match = localFolderFiles.find(f => imgExts.includes(f.ext) && f.baseName.includes(kw));
+ if (match) return match.url;
+ }
+ }
+ return '';
+ }
+
+ function uploadCategoryImage(event, key) {
+ if (!isTonyusAdmin()) return;
+ const file = event.target.files[0];
+ if (!file) return;
+ const reader = new FileReader();
+ reader.onload = function(e) {
+ const img = new Image();
+ img.onload = function() {
+ const canvas = document.createElement('canvas');
+ const ratio = Math.min(300 / img.width, 200 / img.height, 1);
+ canvas.width = Math.round(img.width * ratio);
+ canvas.height = Math.round(img.height * ratio);
+ canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+ customFamilyImages[key] = canvas.toDataURL('image/png');
+ saveAllState();
+ renderFamiliesShowcase();
+ renderFamilyMediaManager();
+ renderCatalog();
+ showToast("Copertina aggiornata!");
+ };
+ img.src = e.target.result;
+ };
+ reader.readAsDataURL(file);
+ }
+
+ function populateFilters() {
+ const catSelect = document.getElementById('category-filter');
+ const currentVal = catSelect.value;
+ const categories = [...new Set(catalog.map(p => p.category).filter(Boolean))].sort();
+ catSelect.innerHTML = '<option value="ALL">Tutte le Famiglie</option>' +
+ categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+ if (categories.includes(currentVal)) catSelect.value = currentVal;
+ populateSubfamilyFilter();
+ }
+
+ function populateSubfamilyFilter() {
+ const fam = document.getElementById('category-filter').value;
+ const subSelect = document.getElementById('subcategory-filter');
+ const items = fam === 'ALL' ? catalog : catalog.filter(p => p.category === fam);
+ const subs = [...new Set(items.map(p => p.subCategory).filter(Boolean))].sort();
+ subSelect.innerHTML = '<option value="ALL">Sottofamiglie</option>' +
+ subs.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+ }
+
+ function onFamilyDropdownChange() {
+ populateSubfamilyFilter();
+ selectFamilyCard(document.getElementById('category-filter').value, true);
+ }
+
+ function selectFamilyCard(family, fromDropdown = false) {
+ const catSelect = document.getElementById('category-filter');
+ if (!fromDropdown) {
+ catSelect.value = (catSelect.value === family) ? 'ALL' : family;
+ populateSubfamilyFilter();
+ }
+ renderFamiliesShowcase();
+ renderSubfamiliesShowcase();
+ resetPageAndRender();
+ }
+
+ function selectSubfamilyCard(subFamily) {
+ const subSelect = document.getElementById('subcategory-filter');
+ subSelect.value = (subSelect.value === subFamily) ? 'ALL' : subFamily;
+ renderSubfamiliesShowcase();
+ resetPageAndRender();
+ }
+
+ function renderFamiliesShowcase() {
+ const container = document.getElementById('families-showcase');
+ const activeFam = document.getElementById('category-filter').value;
+ const families = [...new Set(catalog.map(p => p.category).filter(Boolean))].sort();
+ if (!families.length) { container.innerHTML = ''; return; }
+
+ container.innerHTML = families.map(fam => {
+ const count = catalog.filter(p => p.category === fam).length;
+ const imgUrl = resolveCategoryImage(fam);
+ const isSelected = activeFam === fam;
+ const grad = FAMILY_GRADIENTS[fam] || 'from-indigo-50 to-slate-100 border-slate-200 text-slate-900';
+ const icon = FAMILY_ICONS[fam] || 'fa-layer-group';
+
+ return `
+ <button onclick="selectFamilyCard('${fam.replace(/'/g, "\\'")}')" class="group text-left rounded-xl border p-2 transition flex flex-col justify-between bg-gradient-to-br ${grad} ${isSelected ? 'ring-2 ring-indigo-600 shadow-md' : 'hover:shadow-sm'}">
+ <div class="h-10 w-full bg-white/90 rounded-lg p-1 flex items-center justify-center overflow-hidden mb-1">
+ ${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(fam)}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition" />` : `<i class="fa-solid ${icon} text-base opacity-60"></i>`}
+ </div>
+ <div>
+ <div class="font-bold text-[10px] leading-tight line-clamp-1">${escapeHtml(fam)}</div>
+ <div class="text-[9px] opacity-75 font-medium">${count} art.</div>
+ </div>
+ </button>
+ `;
+ }).join('');
+ }
+
+ function renderSubfamiliesShowcase() {
+ const container = document.getElementById('subfamilies-showcase');
+ const activeFam = document.getElementById('category-filter').value;
+ const activeSub = document.getElementById('subcategory-filter').value;
+ if (activeFam === 'ALL') { container.classList.add('hidden'); return; }
+
+ const famItems = catalog.filter(p => p.category === activeFam);
+ const subs = [...new Set(famItems.map(p => p.subCategory).filter(Boolean))].sort();
+ if (!subs.length) { container.classList.add('hidden'); return; }
+
+ container.classList.remove('hidden');
+ container.innerHTML = subs.map(sub => {
+ const count = famItems.filter(p => p.subCategory === sub).length;
+ const imgUrl = resolveCategoryImage(activeFam, sub);
+ const isSelected = activeSub === sub;
+ const isEco = /ecolabel/i.test(sub);
+ return `
+ <button onclick="selectSubfamilyCard('${sub.replace(/'/g, "\\'")}')" class="bg-white rounded-xl border ${isSelected ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300'} p-2 flex items-center gap-2 text-left shadow-sm transition">
+ <div class="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+ ${imgUrl ? `<img src="${imgUrl}" class="max-h-full max-w-full object-contain" />` : `<i class="fa-solid ${isEco ? 'fa-leaf text-emerald-600' : 'fa-tags text-indigo-400'} text-xs"></i>`}
+ </div>
+ <div class="min-w-0 flex-1">
+ <div class="font-bold text-[11px] text-slate-800 truncate">${escapeHtml(sub)}</div>
+ <div class="text-[9px] text-slate-500">${count} art.</div>
+ </div>
+ </button>
+ `;
+ }).join('');
+ }
+
+ // ==================== RENDER CATALOGO ====================
+ function getStatusBadgeStyle(status) {
+ const s = (status || '').toLowerCase();
+ if (s === 'in esaurimento') return 'bg-amber-100 text-amber-800 border border-amber-200';
+ if (s === 'a richiesta') return 'bg-sky-100 text-sky-800 border border-sky-200';
+ return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+ }
+
+ function resetPageAndRender() {
+ currentPage = 1;
+ renderCatalog();
+ }
+
+ function renderProductCard(prod, showCost) {
+ const inQuote = currentQuote.find(q => q.sku === prod.sku);
+ const imgAsset = resolveProductAsset(prod, 'image');
+ const stAsset = resolveProductAsset(prod, 'st');
+ const ssAsset = resolveProductAsset(prod, 'sds');
+ const parsedSt = stTextCache[prod.sku] || { description: '', isEcolabel: false, isPmc: false };
+ const certs = getProductCertifications(prod, parsedSt);
+ const certBadges = renderCertBadgesHtml(certs);
+ const descText = prod.techDesc || parsedSt.description || '';
+ const domId = 'st-preview-' + prod.sku.replace(/[^a-zA-Z0-9_-]/g, '_');
+ const safeSku = prod.sku.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+ const displayStatus = prod.status || 'In uso';
+
+ if (stAsset.url && stTextCache[prod.sku] === undefined) {
+ setTimeout(() => extractStPreviewText(prod.sku, stAsset), 0);
+ }
+
+ const imgFallbackAttr = imgAsset.fallbackUrl
+ ? `onerror="this.onerror=null;this.src='${imgAsset.fallbackUrl}';"`
+ : `onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"`;
+
+ return `
+ <div class="bg-white rounded-2xl border ${inQuote ? 'border-indigo-400 ring-2 ring-indigo-50' : 'border-slate-200'} shadow-sm hover:shadow-md transition flex flex-col overflow-hidden">
+ <div class="relative h-28 bg-white border-b border-slate-100 p-2 flex items-center justify-center overflow-hidden">
+ ${imgAsset.url
+ ? `<img src="${imgAsset.url}" alt="${escapeHtml(prod.name)}" ${imgFallbackAttr} class="max-h-full max-w-full object-contain hover:scale-105 transition" />
+ <div class="hidden flex-col items-center text-slate-300"><i class="fa-regular fa-image text-2xl mb-1"></i><span class="font-mono text-[10px] text-slate-400">${escapeHtml(prod.alias || prod.sku)}</span></div>`
+ : `<div class="flex flex-col items-center text-slate-300"><i class="fa-regular fa-image text-2xl mb-1"></i><span class="font-mono text-[10px] text-slate-400">${escapeHtml(prod.alias || prod.sku)}</span></div>`
+ }
+ ${prod.alias ? `<span class="absolute top-1.5 left-1.5 bg-slate-900/85 text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">${escapeHtml(prod.alias)}</span>` : ''}
+ <span class="absolute top-1.5 right-1.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${getStatusBadgeStyle(displayStatus)}">${escapeHtml(displayStatus)}</span>
+ <div class="absolute bottom-1.5 right-1.5 flex items-center gap-1">${certBadges}</div>
+ </div>
+
+ <div class="p-3 flex-1 flex flex-col justify-between space-y-2">
+ <div>
+ <div class="flex items-center justify-between text-[10px]">
+ <span class="font-mono font-semibold text-indigo-600">${escapeHtml(prod.sku)}</span>
+ <span class="text-slate-400 truncate max-w-[130px]">${escapeHtml(prod.subCategory || prod.category)}</span>
+ </div>
+ <h4 class="font-bold text-slate-900 text-xs leading-snug mt-0.5 line-clamp-2" title="${escapeHtml(prod.name)}">${escapeHtml(prod.name)}</h4>
+
+ <div id="${domId}" class="${descText ? '' : 'hidden'} mt-1.5 p-1.5 rounded-lg bg-slate-50 border border-slate-100">
+ <p class="text-[10px] text-slate-600 leading-snug line-clamp-2">${escapeHtml(descText)}</p>
+ </div>
+
+ ${(stAsset.url || ssAsset.url) ? `
+ <div class="mt-1.5 flex flex-wrap gap-1">
+ ${stAsset.url ? `<a href="${stAsset.url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-semibold transition"><i class="fa-solid fa-file-pdf"></i> ST</a>` : ''}
+ ${ssAsset.url ? `<a href="${ssAsset.url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-semibold transition"><i class="fa-solid fa-triangle-exclamation"></i> SS</a>` : ''}
+ </div>
+ ` : ''}
+ </div>
+
+ <div class="pt-1.5 border-t border-slate-100 flex items-end justify-between gap-1.5">
+ <div>
+ ${showCost ? `<div class="text-[10px] text-slate-500">Acq: <strong>${formatCurrency(prod.purchaseNet)}</strong></div>` : ''}
+ <span class="text-[10px] text-slate-400 block">Listino / ${escapeHtml(prod.unit || 'PZ')}</span>
+ <span class="font-extrabold text-slate-900 text-sm">${formatCurrency(prod.price)}</span>
+ </div>
+ <button onclick="addToQuote('${safeSku}')" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1 ${inQuote ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'}">
+ <i class="fa-solid ${inQuote ? 'fa-plus' : 'fa-cart-plus'}"></i>
+ <span>${inQuote ? `+1 (${inQuote.qty})` : 'Aggiungi'}</span>
+ </button>
+ </div>
+ </div>
+ </div>
+ `;
+ }
+
+ function renderCatalog() {
+ const query = document.getElementById('search-input').value.toLowerCase().trim();
+ const famFilter = document.getElementById('category-filter').value;
+ const subFilter = document.getElementById('subcategory-filter').value;
+ const certFilter = document.getElementById('cert-filter').value;
+ const statusFilter = document.getElementById('status-filter').value;
+ const groupByFam = document.getElementById('group-by-family-checkbox').checked;
+ const showCost = document.getElementById('show-cost-checkbox').checked;
+
+ const filtered = catalog.filter(p => {
+ const parsedSt = stTextCache[p.sku] || { description: '', isEcolabel: false, isPmc: false };
+ const certs = getProductCertifications(p, parsedSt);
+
+ if (famFilter !== 'ALL' && p.category !== famFilter) return false;
+ if (subFilter !== 'ALL' && (p.subCategory || '') !== subFilter) return false;
+ if (certFilter === 'ECOLABEL' && !certs.isEcolabel) return false;
+ if (certFilter === 'PMC' && !certs.isPmc) return false;
+ if (statusFilter !== 'ALL' && (p.status || 'In uso') !== statusFilter) return false;
+
+ if (!query) return true;
+ const searchable = [
+ p.sku, p.alias, p.name, p.category, p.subCategory,
+ p.techDesc, parsedSt.description,
+ certs.isEcolabel ? 'ecolabel' : '',
+ certs.isPmc ? 'pmc' : ''
+ ].join(' ').toLowerCase();
+ return searchable.includes(query);
+ });
+
+ document.getElementById('catalog-stats-label').textContent = `${filtered.length} / ${catalog.length} art.`;
+ const container = document.getElementById('catalog-container');
+
+ if (!catalog.length) {
+ container.innerHTML = `
+ <div class="bg-white p-10 rounded-2xl border border-dashed border-slate-300 text-center space-y-2">
+ <h3 class="font-bold text-slate-800 text-sm">Listino vuoto</h3>
+ <p class="text-xs text-slate-500">Contatta l'amministratore (Tonyus) per caricare il listino o sincronizza dal Cloud.</p>
+ </div>`;
+ return;
+ }
+
+ const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+ if (currentPage > totalPages) currentPage = totalPages;
+ const pageItems = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+ if (!groupByFam) {
+ container.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">${pageItems.map(p => renderProductCard(p, showCost)).join('')}</div>`;
+ } else {
+ const groups = {};
+ pageItems.forEach(p => {
+ const f = p.category || 'Generale';
+ const s = p.subCategory || 'Generale';
+ if (!groups[f]) groups[f] = {};
+ if (!groups[f][s]) groups[f][s] = [];
+ groups[f][s].push(p);
+ });
+
+ container.innerHTML = Object.entries(groups).map(([famName, subMap]) => {
+ const famImg = resolveCategoryImage(famName);
+ const grad = FAMILY_GRADIENTS[famName] || 'from-slate-100 to-slate-200 border-slate-300 text-slate-900';
+ const subSectionsHtml = Object.entries(subMap).map(([subName, items]) => {
+ const subImg = resolveCategoryImage(famName, subName);
+ const isEcoSub = /ecolabel/i.test(subName);
+ return `
+ <div class="space-y-2.5">
+ <div class="flex items-center gap-2.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200">
+ ${subImg ? `<img src="${subImg}" class="w-7 h-7 object-contain rounded bg-slate-50 p-0.5 border border-slate-100" />` : ''}
+ <div class="flex-1 flex items-center gap-2">
+ <h4 class="font-bold text-slate-800 text-xs">${escapeHtml(subName)}</h4>
+ ${isEcoSub ? `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold"><i class="fa-solid fa-leaf mr-1"></i>Ecolabel</span>` : ''}
+ </div>
+ </div>
+ <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+ ${items.map(p => renderProductCard(p, showCost)).join('')}
+ </div>
+ </div>
+ `;
+ }).join('');
+
+ return `
+ <div class="space-y-3">
+ <div class="rounded-xl border bg-gradient-to-r ${grad} p-2.5 flex items-center gap-3">
+ ${famImg ? `<div class="w-12 h-9 bg-white rounded-lg p-1 flex items-center justify-center shrink-0"><img src="${famImg}" class="max-h-full max-w-full object-contain" /></div>` : ''}
+ <div>
+ <span class="text-[9px] uppercase tracking-wider font-bold opacity-70">Famiglia</span>
+ <h3 class="text-sm font-extrabold leading-tight">${escapeHtml(famName)}</h3>
+ </div>
+ </div>
+ <div class="space-y-4">${subSectionsHtml}</div>
+ </div>
+ `;
+ }).join('');
+ }
+
+ document.getElementById('pagination-controls').innerHTML = `
+ <span class="text-slate-500 text-xs">Pagina <strong>${currentPage}</strong> di <strong>${totalPages}</strong></span>
+ <div class="flex gap-1.5">
+ <button onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''} class="px-3 py-1 rounded-lg border border-slate-200 text-xs font-medium disabled:opacity-40 hover:bg-slate-50">Precedente</button>
+ <button onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''} class="px-3 py-1 rounded-lg border border-slate-200 text-xs font-medium disabled:opacity-40 hover:bg-slate-50">Successiva</button>
+ </div>
+ `;
+ }
+
+ function changePage(delta) {
+ currentPage += delta;
+ renderCatalog();
+ window.scrollTo({ top: 0, behavior: 'smooth' });
+ }
+
+ // ==================== CONFIGURATORE OFFERTA ====================
+ function addToQuote(sku) {
+ const prod = catalog.find(p => p.sku === sku);
+ if (!prod) return;
+ const existing = currentQuote.find(q => q.sku === sku);
+ if (existing) existing.qty += 1;
+ else currentQuote.push({ ...prod, listPrice: prod.price, offeredPrice: prod.price, qty: 1 });
+ saveAllState(false);
+ renderCatalog();
+ renderQuote();
+ }
+
+ function updateQuoteQty(index, delta) {
+ currentQuote[index].qty += delta;
+ if (currentQuote[index].qty <= 0) currentQuote.splice(index, 1);
+ saveAllState(false);
+ renderCatalog();
+ renderQuote();
+ }
+
+ function updateQuoteOfferedPrice(index, newPrice) {
+ const val = parseFloat(newPrice);
+ if (!isNaN(val) && val >= 0) {
+ currentQuote[index].offeredPrice = val;
+ saveAllState(false);
+ renderQuote();
+ }
+ }
+
+ function updateQuoteItemDiscount(index, discountPct) {
+ const pct = parseFloat(discountPct);
+ if (!isNaN(pct) && pct >= 0 && pct <= 100) {
+ const list = currentQuote[index].listPrice;
+ currentQuote[index].offeredPrice = parseFloat((list * (1 - pct / 100)).toFixed(2));
+ saveAllState(false);
+ renderQuote();
+ }
+ }
+
+ function applyGlobalDiscount() {
+ const pct = parseFloat(document.getElementById('global-discount-input').value);
+ if (isNaN(pct) || pct < 0 || pct > 100) return showToast("Inserisci uno sconto tra 0 e 100%");
+ currentQuote.forEach(item => {
+ item.offeredPrice = parseFloat((item.listPrice * (1 - pct / 100)).toFixed(2));
+ });
+ saveAllState(false);
+ renderQuote();
+ showToast(`Sconto del ${pct}% applicato`);
+ }
+
+ function clearCurrentQuote() {
+ if (!currentQuote.length) return;
+ currentQuote = [];
+ saveAllState(false);
+ renderCatalog();
+ renderQuote();
+ }
+
+ function renderQuote() {
+ const container = document.getElementById('quote-items-container');
+ document.getElementById('badge-quote-count').textContent = currentQuote.reduce((acc, i) => acc + i.qty, 0);
+
+ if (!currentQuote.length) {
+ container.innerHTML = `<div class="h-24 flex flex-col items-center justify-center text-center text-slate-400 p-2"><i class="fa-solid fa-basket-shopping text-xl mb-1 text-slate-300"></i><p class="text-[11px] font-medium text-slate-500">Seleziona gli articoli dal listino per comporre l'offerta</p></div>`;
+ updateQuoteTotals(0, 0);
+ return;
+ }
+
+ let totalList = 0, totalNet = 0;
+ container.innerHTML = currentQuote.map((item, idx) => {
+ const fresh = catalog.find(c => c.sku === item.sku) || item;
+ totalList += item.listPrice * item.qty;
+ totalNet += item.offeredPrice * item.qty;
+ const discountPct = item.listPrice > 0 ? (((item.listPrice - item.offeredPrice) / item.listPrice) * 100) : 0;
+ const imgAsset = resolveProductAsset(fresh, 'image');
+ const stAsset = resolveProductAsset(fresh, 'st');
+ const ssAsset = resolveProductAsset(fresh, 'sds');
+ const imgFallbackAttr = imgAsset.fallbackUrl ? `onerror="this.onerror=null;this.src='${imgAsset.fallbackUrl}';"` : '';
+
+ return `
+ <div class="p-2 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+ <div class="flex items-start gap-2">
+ <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+ ${imgAsset.url ? `<img src="${imgAsset.url}" ${imgFallbackAttr} class="max-h-full max-w-full object-contain" />` : `<i class="fa-regular fa-image text-slate-300 text-xs"></i>`}
+ </div>
+ <div class="flex-1 min-w-0">
+ <div class="flex justify-between items-start gap-1">
+ <div class="truncate">
+ <span class="text-[10px] font-mono font-bold text-indigo-600">${escapeHtml(fresh.sku)}</span>
+ ${fresh.alias ? `<span class="text-[10px] font-mono text-slate-400 ml-1">(${escapeHtml(fresh.alias)})</span>` : ''}
+ </div>
+ <button onclick="updateQuoteQty(${idx}, -${item.qty})" class="text-slate-400 hover:text-rose-500 text-xs"><i class="fa-solid fa-xmark"></i></button>
+ </div>
+ <h4 class="text-[11px] font-bold text-slate-800 leading-tight line-clamp-1">${escapeHtml(fresh.name)}</h4>
+ <div class="flex flex-wrap items-center gap-1 mt-0.5">
+ ${stAsset.url ? `<a href="${stAsset.url}" target="_blank" class="text-[9px] font-bold px-1.5 rounded bg-blue-100 text-blue-700 hover:bg-blue-200">ST</a>` : ''}
+ ${ssAsset.url ? `<a href="${ssAsset.url}" target="_blank" class="text-[9px] font-bold px-1.5 rounded bg-amber-100 text-amber-800 hover:bg-amber-200">SS</a>` : ''}
+ </div>
+ </div>
+ </div>
+ <div class="grid grid-cols-12 gap-1.5 items-center">
+ <div class="col-span-4 flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
+ <button onclick="updateQuoteQty(${idx}, -1)" class="px-1.5 py-0.5 text-slate-600 hover:bg-slate-100 text-xs font-bold">-</button>
+ <span class="flex-1 text-center text-[11px] font-bold">${item.qty}</span>
+ <button onclick="updateQuoteQty(${idx}, 1)" class="px-1.5 py-0.5 text-slate-600 hover:bg-slate-100 text-xs font-bold">+</button>
+ </div>
+ <div class="col-span-5">
+ <input type="number" step="0.01" min="0" value="${item.offeredPrice.toFixed(2)}" onchange="updateQuoteOfferedPrice(${idx}, this.value)" title="Prezzo unitario offerto" class="w-full px-1.5 py-0.5 bg-white border border-indigo-200 rounded-lg text-[11px] font-bold text-indigo-700" />
+ </div>
+ <div class="col-span-3">
+ <input type="number" step="0.5" value="${discountPct.toFixed(1)}" onchange="updateQuoteItemDiscount(${idx}, this.value)" title="Sconto %" class="w-full px-1 py-0.5 bg-white border border-slate-200 rounded-lg text-[11px] text-right font-semibold ${discountPct > 0 ? 'text-emerald-600' : 'text-slate-600'}" />
+ </div>
+ </div>
+ </div>
+ `;
+ }).join('');
+ updateQuoteTotals(totalList, totalNet);
+ }
+
+ function updateQuoteTotals(totalList, totalNet) {
+ const saved = totalList - totalNet;
+ const pct = totalList > 0 ? ((saved / totalList) * 100).toFixed(1) : 0;
+ document.getElementById('quote-total-list').textContent = formatCurrency(totalList);
+ document.getElementById('quote-total-discount').textContent = `- ${formatCurrency(saved)} (${pct}%)`;
+ document.getElementById('quote-total-net').textContent = formatCurrency(totalNet);
+ }
+
+ // ==================== STAMPE PDF (DOPPIO QR CODE ST/SS + PULSANTI LINK CLICCABILI) ====================
+ function buildQuoteRecord() {
+ if (!currentQuote.length) { showToast("Aggiungi almeno un articolo!"); return null; }
+ const client = document.getElementById('quote-client').value.trim();
+ if (!client) { showToast("Inserisci la Ragione Sociale del Cliente!"); document.getElementById('quote-client').focus(); return null; }
+ const totalList = currentQuote.reduce((s, i) => s + i.listPrice * i.qty, 0);
+ const totalNet = currentQuote.reduce((s, i) => s + i.offeredPrice * i.qty, 0);
+
+ const enrichedItems = currentQuote.map(item => {
+ const fresh = catalog.find(c => c.sku === item.sku) || item;
+ const parsedSt = stTextCache[fresh.sku] || { description: '' };
+ const certs = getProductCertifications(fresh, parsedSt);
+ return {
+ ...fresh,
+ listPrice: item.listPrice,
+ offeredPrice: item.offeredPrice,
+ qty: item.qty,
+ stDescription: fresh.techDesc || parsedSt.description || '',
+ isEcolabel: certs.isEcolabel,
+ isPmc: certs.isPmc,
+ publicStUrl: resolvePublicDocUrl(fresh, 'st'),
+ publicSsUrl: resolvePublicDocUrl(fresh, 'sds')
+ };
+ });
+
+ const maxNum = quoteHistory.reduce((max, q) => {
+ const m = String(q.id || '').match(/-(\d+)$/);
+ const n = m ? parseInt(m[1], 10) : 0;
+ return n > max ? n : max;
+ }, 0);
+
+ return {
+ id: 'OFF-' + new Date().getFullYear() + '-' + String(maxNum + 1).padStart(3, '0'),
+ date: new Date().toLocaleDateString('it-IT'),
+ validUntil: document.getElementById('quote-valid-until').value,
+ client,
+ clientEmail: document.getElementById('quote-client-email').value.trim(),
+ agent: document.getElementById('quote-agent').value.trim() || sessionStorage.getItem(AUTH_SESSION_KEY) || 'Direzione Commerciale',
+ notes: document.getElementById('quote-notes').value.trim(),
+ includeImages: document.getElementById('include-images-in-pdf').checked,
+ includeDetails: document.getElementById('include-details-in-pdf').checked,
+ companySnapshot: JSON.parse(JSON.stringify(companyInfo)),
+ items: enrichedItems,
+ totalList,
+ totalNet
+ };
+ }
+
+ async function saveQuoteOnly() {
+ const record = buildQuoteRecord();
+ if (!record) return;
+ quoteHistory.unshift(record);
+ await saveAllState(true);
+ renderHistory();
+ showToast(`Offerta ${record.id} salvata!`);
+ }
+
+ async function generateAndPrintQuote() {
+ const record = buildQuoteRecord();
+ if (!record) return;
+ quoteHistory.unshift(record);
+ await saveAllState(true);
+ renderHistory();
+ printQuoteRecord(record);
+ }
+
+ function buildDualQrAndLinksBlock(stUrl, ssUrl, largeMode = false) {
+ const qrSize = largeMode ? 96 : 76;
+ const imgClass = largeMode ? 'w-20 h-20' : 'w-12 h-12';
+ const stQrImg = stUrl ? generateQrDataUrl(stUrl, qrSize) : '';
+ const ssQrImg = ssUrl ? generateQrDataUrl(ssUrl, qrSize) : '';
+ if (!stQrImg && !ssQrImg) return '<span class="text-[9px] text-slate-400">Nessuna scheda allegata</span>';
+
+ return `
+ <div class="inline-flex items-start justify-center gap-3">
+ ${stQrImg ? `
+ <div class="text-center flex flex-col items-center">
+ <div class="text-[8px] font-extrabold uppercase tracking-wider text-blue-700 mb-0.5">QR ST</div>
+ <a href="${escapeHtml(stUrl)}" target="_blank" rel="noopener" class="block">
+ <img src="${stQrImg}" alt="QR Scheda Tecnica" class="${imgClass} border-2 border-blue-500 rounded-lg p-0.5 bg-white" />
+ </a>
+ <a href="${escapeHtml(stUrl)}" target="_blank" rel="noopener" class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-bold tracking-wide shadow-xs">
+ <span>Apri ST</span> <span>↗</span>
+ </a>
+ </div>
+ ` : ''}
+ ${ssQrImg ? `
+ <div class="text-center flex flex-col items-center">
+ <div class="text-[8px] font-extrabold uppercase tracking-wider text-amber-700 mb-0.5">QR SS</div>
+ <a href="${escapeHtml(ssUrl)}" target="_blank" rel="noopener" class="block">
+ <img src="${ssQrImg}" alt="QR Scheda Sicurezza" class="${imgClass} border-2 border-amber-500 rounded-lg p-0.5 bg-white" />
+ </a>
+ <a href="${escapeHtml(ssUrl)}" target="_blank" rel="noopener" class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-600 text-white text-[9px] font-bold tracking-wide shadow-xs">
+ <span>Apri SS</span> <span>↗</span>
+ </a>
+ </div>
+ ` : ''}
+ </div>
+ `;
+ }
+
+ function printQuoteRecord(record) {
+ const comp = record.companySnapshot || companyInfo;
+ const saved = record.totalList - record.totalNet;
+ const totalDiscountPct = record.totalList > 0 ? ((saved / record.totalList) * 100).toFixed(1) : 0;
+
+ const rowsHtml = record.items.map(item => {
+ const fresh = catalog.find(c => c.sku === item.sku) || item;
+ const imgAsset = resolveProductAsset(fresh, 'image');
+ const stUrl = resolvePublicDocUrl(fresh, 'st') || item.publicStUrl || '';
+ const ssUrl = resolvePublicDocUrl(fresh, 'sds') || item.publicSsUrl || '';
+ const itemDiscount = item.listPrice > 0 ? (((item.listPrice - item.offeredPrice) / item.listPrice) * 100) : 0;
+ const parsedSt = stTextCache[fresh.sku] || { description: '' };
+ const stDesc = item.stDescription || fresh.techDesc || parsedSt.description || '';
+ const certs = getProductCertifications(fresh, parsedSt);
+ const qrBlock = record.includeDetails ? buildDualQrAndLinksBlock(stUrl, ssUrl, false) : '';
+
+ return `
+ <tr class="border-b border-slate-200 print-row">
+ ${record.includeImages ? `
+ <td class="py-2 px-1.5 w-14 align-top">
+ <div class="w-12 h-12 rounded border border-slate-200 bg-white flex items-center justify-center p-0.5 overflow-hidden">
+ ${imgAsset.url ? `<img src="${imgAsset.url}" class="max-h-full max-w-full object-contain" />` : `<span class="text-[8px] font-mono text-slate-400">${escapeHtml(fresh.alias || fresh.sku)}</span>`}
+ </div>
+ </td>` : ''}
+ <td class="py-2 px-1.5 align-top">
+ <div class="font-mono text-[10px] font-bold text-indigo-700">
+ ${escapeHtml(fresh.sku)}
+ ${fresh.alias ? `<span class="text-slate-500 font-normal ml-1">(${escapeHtml(fresh.alias)})</span>` : ''}
+ </div>
+ <div class="font-bold text-slate-900 text-xs">${escapeHtml(fresh.name)}</div>
+ ${(certs.isEcolabel || certs.isPmc) ? `
+ <div class="mt-0.5 flex flex-wrap gap-1">
+ ${certs.isEcolabel ? `<span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[8px] font-bold">ECOLABEL</span>` : ''}
+ ${certs.isPmc ? `<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 text-[8px] font-bold">PMC</span>` : ''}
+ </div>
+ ` : ''}
+ ${record.includeDetails && stDesc ? `<div class="text-[10px] text-slate-600 mt-1 leading-snug">${escapeHtml(stDesc)}</div>` : ''}
+ </td>
+ <td class="py-2 px-1.5 text-center font-semibold text-xs align-top">${item.qty} ${escapeHtml(fresh.unit || 'PZ')}</td>
+ <td class="py-2 px-1.5 text-right text-slate-500 text-xs align-top">${formatCurrency(item.listPrice)}</td>
+ <td class="py-2 px-1.5 text-right text-emerald-700 font-medium text-xs align-top">${itemDiscount > 0 ? '-' + itemDiscount.toFixed(1) + '%' : '—'}</td>
+ <td class="py-2 px-1.5 text-right font-bold text-slate-900 text-xs align-top">${formatCurrency(item.offeredPrice)}</td>
+ <td class="py-2 px-1.5 text-right font-extrabold text-indigo-700 text-xs align-top">${formatCurrency(item.offeredPrice * item.qty)}</td>
+ ${record.includeDetails ? `<td class="py-2 px-1 text-center align-top">${qrBlock}</td>` : ''}
+ </tr>
+ `;
+ }).join('');
+
+ const printArea = document.getElementById('print-area');
+ printArea.innerHTML = `
+ <div class="max-w-4xl mx-auto p-6 bg-white text-slate-900">
+ <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-5">
+ <div class="flex items-center gap-3.5">
+ ${comp.logo ? `<div class="h-14 w-32 flex items-center"><img src="${comp.logo}" class="max-h-full max-w-full object-contain" /></div>` : ''}
+ <div>
+ <h1 class="text-lg font-extrabold text-slate-900">${escapeHtml(comp.name)}</h1>
+ ${comp.tagline ? `<p class="text-[11px] font-medium text-indigo-600">${escapeHtml(comp.tagline)}</p>` : ''}
+ <p class="text-[10px] text-slate-500 mt-0.5">${escapeHtml(comp.address)} • ${escapeHtml(comp.vat)}</p>
+ <p class="text-[10px] text-slate-500">${escapeHtml(comp.contact)}</p>
+ </div>
+ </div>
+ <div class="text-right">
+ <div class="inline-block bg-indigo-600 text-white text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full mb-1">Offerta Commerciale</div>
+ <div class="text-base font-extrabold">${escapeHtml(record.id)}</div>
+ <div class="text-[11px] text-slate-500">Data: ${escapeHtml(record.date)}</div>
+ ${record.validUntil ? `<div class="text-[11px] text-slate-500">Validità: ${new Date(record.validUntil).toLocaleDateString('it-IT')}</div>` : ''}
+ </div>
+ </div>
+
+ <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-5 text-xs">
+ <div>
+ <div class="text-[10px] uppercase font-bold text-slate-400">Spett.le Cliente</div>
+ <div class="font-bold text-sm text-slate-900">${escapeHtml(record.client)}</div>
+ ${record.clientEmail ? `<div class="text-[11px] text-slate-600">${escapeHtml(record.clientEmail)}</div>` : ''}
+ </div>
+ <div class="text-right">
+ <div class="text-[10px] uppercase font-bold text-slate-400">Agente di Riferimento</div>
+ <div class="font-semibold text-slate-800">${escapeHtml(record.agent)}</div>
+ </div>
+ </div>
+
+ <table class="w-full text-left border-collapse mb-5">
+ <thead>
+ <tr class="bg-slate-900 text-white text-[10px] uppercase tracking-wider">
+ ${record.includeImages ? `<th class="py-2 px-1.5 rounded-tl-lg">Foto</th>` : ''}
+ <th class="py-2 px-1.5 ${!record.includeImages ? 'rounded-tl-lg' : ''}">Articolo</th>
+ <th class="py-2 px-1.5 text-center">Q.tà</th>
+ <th class="py-2 px-1.5 text-right">Listino</th>
+ <th class="py-2 px-1.5 text-right">Sc.</th>
+ <th class="py-2 px-1.5 text-right">Netto Un.</th>
+ <th class="py-2 px-1.5 text-right ${!record.includeDetails ? 'rounded-tr-lg' : ''}">Totale</th>
+ ${record.includeDetails ? `<th class="py-2 px-1 text-center rounded-tr-lg">QR & Link ST/SS</th>` : ''}
+ </tr>
+ </thead>
+ <tbody>${rowsHtml}</tbody>
+ </table>
+
+ <div class="flex justify-between items-start gap-6">
+ <div class="flex-1 text-xs">
+ ${record.notes ? `<div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><div class="font-bold text-slate-700 mb-1">Note e Condizioni:</div><p class="text-slate-600 whitespace-pre-line">${escapeHtml(record.notes)}</p></div>` : ''}
+ <p class="text-[10px] text-slate-400 mt-2">Prezzi IVA esclusa. Inquadra i QR Code ST/SS o clicca sui tasti blu/arancio nel PDF per scaricare Schede Tecniche e di Sicurezza.</p>
+ </div>
+ <div class="w-64 bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+ <div class="flex justify-between text-slate-500"><span>Totale Listino:</span><span>${formatCurrency(record.totalList)}</span></div>
+ <div class="flex justify-between text-emerald-600 font-semibold"><span>Sconto (${totalDiscountPct}%):</span><span>- ${formatCurrency(saved)}</span></div>
+ <div class="flex justify-between text-sm font-extrabold text-slate-900 pt-1.5 border-t border-slate-300"><span>TOTALE NETTO:</span><span class="text-indigo-700">${formatCurrency(record.totalNet)}</span></div>
+ </div>
+ </div>
+ </div>
+ `;
+
+ printArea.classList.remove('hidden');
+ setTimeout(() => { window.print(); printArea.classList.add('hidden'); }, 350);
+ }
+
+ // ==================== STAMPA CATALOGO ACCESSORIA CON SELEZIONE FAMIGLIA & LAYOUT SPAZIOSO ====================
+ function openCatalogPrintModal() {
+ const famSelect = document.getElementById('print-cat-family');
+ const currentMainFam = document.getElementById('category-filter').value;
+ const categories = [...new Set(catalog.map(p => p.category).filter(Boolean))].sort();
+
+ famSelect.innerHTML = '<option value="ALL">Tutte le Famiglie</option>' +
+ categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+ if (categories.includes(currentMainFam)) {
+ famSelect.value = currentMainFam;
+ }
+ updatePrintModalSubfamilies();
+ document.getElementById('catalog-print-modal').classList.remove('hidden');
+ }
+
+ function closeCatalogPrintModal() {
+ document.getElementById('catalog-print-modal').classList.add('hidden');
+ }
+
+ function updatePrintModalSubfamilies() {
+ const fam = document.getElementById('print-cat-family').value;
+ const subSelect = document.getElementById('print-cat-subfamily');
+ const currentMainSub = document.getElementById('subcategory-filter').value;
+ const items = fam === 'ALL' ? catalog : catalog.filter(p => p.category === fam);
+ const subs = [...new Set(items.map(p => p.subCategory).filter(Boolean))].sort();
+
+ subSelect.innerHTML = '<option value="ALL">Tutte le Sottofamiglie</option>' +
+ subs.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+
+ if (subs.includes(currentMainSub)) {
+ subSelect.value = currentMainSub;
+ }
+ }
+
+ function executeCatalogPrint() {
+ const selectedFam = document.getElementById('print-cat-family').value;
+ const selectedSub = document.getElementById('print-cat-subfamily').value;
+
+ const itemsToPrint = catalog.filter(p => {
+ if (selectedFam !== 'ALL' && p.category !== selectedFam) return false;
+ if (selectedSub !== 'ALL' && (p.subCategory || '') !== selectedSub) return false;
+ return true;
+ });
+
+ if (!itemsToPrint.length) {
+ showToast("Nessun articolo trovato per la famiglia selezionata.");
+ return;
+ }
+
+ closeCatalogPrintModal();
+
+ // Layout editoriale spazioso: 4 schede grandi per pagina (griglia 2x2)
+ const CARDS_PER_PAGE = 4;
+ const pagesHtml = [];
+
+ for (let i = 0; i < itemsToPrint.length; i += CARDS_PER_PAGE) {
+ const chunk = itemsToPrint.slice(i, i + CARDS_PER_PAGE);
+ const pageNum = Math.floor(i / CARDS_PER_PAGE) + 1;
+ const totalPages = Math.ceil(itemsToPrint.length / CARDS_PER_PAGE);
+
+ const cardsHtml = chunk.map(prod => {
+ const imgAsset = resolveProductAsset(prod, 'image');
+ const stUrl = resolvePublicDocUrl(prod, 'st');
+ const ssUrl = resolvePublicDocUrl(prod, 'sds');
+ const parsedSt = stTextCache[prod.sku] || { description: '' };
+ const descText = prod.techDesc || parsedSt.description || '';
+ const certs = getProductCertifications(prod, parsedSt);
+ const qrAndLinks = buildDualQrAndLinksBlock(stUrl, ssUrl, true);
+
+ return `
+ <div class="border-2 border-slate-200 rounded-2xl p-4 flex flex-col justify-between bg-white print-card h-[410px]">
+ <!-- Intestazione Scheda -->
+ <div>
+ <div class="flex items-center justify-between gap-2 mb-2">
+ <div class="flex items-center gap-1.5">
+ <span class="font-mono text-xs font-extrabold text-white bg-slate-900 px-2 py-0.5 rounded">${escapeHtml(prod.sku)}</span>
+ ${prod.alias ? `<span class="font-mono text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">${escapeHtml(prod.alias)}</span>` : ''}
+ </div>
+ <div class="flex items-center gap-1">
+ ${certs.isEcolabel ? `<span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[9px] font-bold">ECOLABEL</span>` : ''}
+ ${certs.isPmc ? `<span class="px-2 py-0.5 rounded bg-rose-600 text-white text-[9px] font-bold">PMC</span>` : ''}
+ </div>
+ </div>
+
+ <!-- Immagine Prodotto Grande -->
+ <div class="h-36 w-full bg-slate-50/70 rounded-xl border border-slate-100 p-2 flex items-center justify-center overflow-hidden mb-2.5">
+ ${imgAsset.url
+ ? `<img src="${imgAsset.url}" class="max-h-full max-w-full object-contain" />`
+ : `<div class="text-slate-300 text-xs font-mono">${escapeHtml(prod.alias || prod.sku)}</div>`
+ }
+ </div>
+
+ <div class="text-[10px] font-semibold uppercase tracking-wider text-indigo-600">
+ ${escapeHtml(prod.category)}${prod.subCategory ? ' • ' + escapeHtml(prod.subCategory) : ''}
+ </div>
+ <h3 class="font-extrabold text-slate-900 text-sm leading-snug mt-0.5 line-clamp-2">${escapeHtml(prod.name)}</h3>
+ ${descText ? `<p class="text-[11px] text-slate-600 leading-snug mt-1 line-clamp-2">${escapeHtml(descText)}</p>` : ''}
+ </div>
+
+ <!-- Footer Scheda: Prezzo di Vendita + Doppio QR & Pulsanti Link Cliccabili -->
+ <div class="pt-2.5 mt-2 border-t border-slate-200 flex items-end justify-between gap-2">
+ <div>
+ <span class="text-[10px] uppercase font-bold text-slate-400 block">Prezzo Listino / ${escapeHtml(prod.unit || 'PZ')}</span>
+ <span class="text-xl font-black text-slate-900">${formatCurrency(prod.price)}</span>
+ <span class="text-[9px] text-slate-400 block">IVA esclusa</span>
+ </div>
+ <div class="shrink-0">
+ ${qrAndLinks}
+ </div>
+ </div>
+ </div>
+ `;
+ }).join('');
+
+ pagesHtml.push(`
+ <div class="max-w-4xl mx-auto p-6 bg-white text-slate-900 ${i > 0 ? 'print-page-break' : ''}">
+ <div class="flex justify-between items-center border-b-2 border-slate-900 pb-3 mb-5">
+ <div class="flex items-center gap-3">
+ ${companyInfo.logo ? `<img src="${companyInfo.logo}" class="h-11 object-contain" />` : ''}
+ <div>
+ <h1 class="text-base font-extrabold text-slate-900">${escapeHtml(companyInfo.name)}</h1>
+ <p class="text-[11px] text-indigo-700 font-bold">
+ Catalogo Prodotti ${selectedFam !== 'ALL' ? '— ' + escapeHtml(selectedFam) : 'Completo'}
+ ${selectedSub !== 'ALL' ? ' (' + escapeHtml(selectedSub) + ')' : ''}
+ </p>
+ </div>
+ </div>
+ <div class="text-right text-[10px] text-slate-500">
+ <div class="font-bold text-slate-700">Pagina ${pageNum} di ${totalPages}</div>
+ <div>Aggiornato al ${new Date().toLocaleDateString('it-IT')}</div>
+ </div>
+ </div>
+
+ <div class="grid grid-cols-2 gap-5">
+ ${cardsHtml}
+ </div>
+ </div>
+ `);
+ }
+
+ const printArea = document.getElementById('print-area');
+ printArea.innerHTML = pagesHtml.join('');
+ printArea.classList.remove('hidden');
+ setTimeout(() => { window.print(); printArea.classList.add('hidden'); }, 400);
+ }
+
+ // ==================== INVIO EMAIL / LINK CONDIVISIBILE AL CLIENTE ====================
+ function encodeOfferForUrl(record) {
+ const compact = {
+ id: record.id,
+ d: record.date,
+ v: record.validUntil,
+ c: record.client,
+ a: record.agent,
+ n: record.notes,
+ co: {
+ name: record.companySnapshot?.name || companyInfo.name,
+ vat: record.companySnapshot?.vat || companyInfo.vat,
+ contact: record.companySnapshot?.contact || companyInfo.contact,
+ address: record.companySnapshot?.address || companyInfo.address
+ },
+ it: record.items.map(i => ({
+ s: i.sku,
+ al: i.alias || '',
+ nm: i.name,
+ u: i.unit || 'PZ',
+ q: i.qty,
+ lp: i.listPrice,
+ op: i.offeredPrice,
+ st: i.publicStUrl || '',
+ ss: i.publicSsUrl || '',
+ eco: i.isEcolabel ? 1 : 0,
+ pmc: i.isPmc ? 1 : 0
+ }))
+ };
+ const jsonStr = JSON.stringify(compact);
+ return btoa(unescape(encodeURIComponent(jsonStr)));
+ }
+
+ function openEmailShareModal(historyRecord = null) {
+ const record = historyRecord || buildQuoteRecord();
+ if (!record) return;
+ if (!historyRecord) {
+ quoteHistory.unshift(record);
+ saveAllState(true);
+ renderHistory();
+ }
+ activeShareRecord = record;
+
+ const baseUrl = window.location.origin + window.location.pathname;
+ const encoded = encodeOfferForUrl(record);
+ const shareUrl = `${baseUrl}?offerta=${encoded}`;
+
+ document.getElementById('share-email-to').value = record.clientEmail || '';
+ document.getElementById('share-email-subject').value = `Offerta Commerciale ${record.id} - ${companyInfo.name}`;
+ document.getElementById('share-offer-url').value = shareUrl;
+
+ const itemsLines = record.items.map(i => {
+ let line = `• ${i.sku} - ${i.name} | Q.tà: ${i.qty} ${i.unit || 'PZ'} | Prezzo Offerto: ${formatCurrency(i.offeredPrice)} (Tot: ${formatCurrency(i.offeredPrice * i.qty)})`;
+ if (i.publicStUrl) line += `\n Scheda Tecnica (ST): ${i.publicStUrl}`;
+ if (i.publicSsUrl) line += `\n Scheda Sicurezza (SS): ${i.publicSsUrl}`;
+ return line;
+ }).join('\n\n');
+
+ const body = `Gentile ${record.client},\n\nin allegato e al link seguente trova la nostra Offerta Commerciale n. ${record.id} del ${record.date}:\n${shareUrl}\n\nRIEPILOGO ARTICOLI:\n${itemsLines}\n\nTOTALE NETTO OFFERTA: ${formatCurrency(record.totalNet)} (IVA esclusa)\n${record.notes ? `\nNote: ${record.notes}\n` : ''}\nCordiali saluti,\n${record.agent}\n${companyInfo.name}\n${companyInfo.contact}`;
+
+ document.getElementById('share-email-body').value = body;
+ document.getElementById('email-share-modal').classList.remove('hidden');
+ }
+
+ function closeEmailShareModal() {
+ document.getElementById('email-share-modal').classList.add('hidden');
+ }
+
+ function copyShareLink() {
+ const input = document.getElementById('share-offer-url');
+ input.select();
+ navigator.clipboard.writeText(input.value);
+ showToast("Link offerta copiato negli appunti!");
+ }
+
+ function copyEmailText() {
+ const textarea = document.getElementById('share-email-body');
+ textarea.select();
+ navigator.clipboard.writeText(textarea.value);
+ showToast("Testo email copiato!");
+ }
+
+ function launchMailClient() {
+ const to = encodeURIComponent(document.getElementById('share-email-to').value.trim());
+ const subject = encodeURIComponent(document.getElementById('share-email-subject').value.trim());
+ const body = encodeURIComponent(document.getElementById('share-email-body').value);
+ window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+ }
+
+ function downloadClientOfferHtml() {
+ if (!activeShareRecord) return;
+ const r = activeShareRecord;
+ const comp = r.companySnapshot || companyInfo;
+ const rows = r.items.map(i => `
+ <tr>
+ <td style="padding:10px;border-bottom:1px solid #e2e8f0;"><strong>${escapeHtml(i.sku)}</strong><br>${escapeHtml(i.name)}</td>
+ <td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:center;">${i.qty} ${escapeHtml(i.unit || 'PZ')}</td>
+ <td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:right;">${formatCurrency(i.offeredPrice)}</td>
+ <td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:bold;">${formatCurrency(i.offeredPrice * i.qty)}</td>
+ <td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:center;">
+ ${i.publicStUrl ? `<a href="${escapeHtml(i.publicStUrl)}" target="_blank" style="display:inline-block;padding:4px 8px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-size:11px;font-weight:bold;margin:2px;">Scheda Tecnica (ST)</a>` : ''}
+ ${i.publicSsUrl ? `<a href="${escapeHtml(i.publicSsUrl)}" target="_blank" style="display:inline-block;padding:4px 8px;background:#d97706;color:#fff;border-radius:6px;text-decoration:none;font-size:11px;font-weight:bold;margin:2px;">Scheda Sicurezza (SS)</a>` : ''}
+ </td>
+ </tr>
+ `).join('');
+
+ const htmlDoc = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Offerta ${escapeHtml(r.id)}</title></head><body style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a;">
+ <div style="max-width:850px;margin:auto;background:#fff;padding:28px;border-radius:16px;border:1px solid #cbd5e1;">
+ <h2 style="margin:0 0 4px 0;">${escapeHtml(comp.name)}</h2>
+ <p style="margin:0 0 16px 0;color:#64748b;font-size:12px;">${escapeHtml(comp.address)} | ${escapeHtml(comp.vat)} | ${escapeHtml(comp.contact)}</p>
+ <div style="background:#f1f5f9;padding:14px;border-radius:10px;margin-bottom:20px;">
+ <strong>Offerta:</strong> ${escapeHtml(r.id)} del ${escapeHtml(r.date)}<br>
+ <strong>Cliente:</strong> ${escapeHtml(r.client)}<br>
+ <strong>Agente:</strong> ${escapeHtml(r.agent)}
+ </div>
+ <table style="width:100%;border-collapse:collapse;font-size:13px;">
+ <thead><tr style="background:#0f172a;color:#fff;"><th style="padding:10px;text-align:left;">Articolo</th><th style="padding:10px;">Q.tà</th><th style="padding:10px;text-align:right;">Prezzo Un.</th><th style="padding:10px;text-align:right;">Totale</th><th style="padding:10px;">Documenti ST / SS</th></tr></thead>
+ <tbody>${rows}</tbody>
+ </table>
+ <h3 style="text-align:right;margin-top:20px;color:#4338ca;">Totale Netto Offerta: ${formatCurrency(r.totalNet)} (IVA esclusa)</h3>
+ </div></body></html>`;
+
+ const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+ const a = document.createElement('a');
+ a.href = URL.createObjectURL(blob);
+ a.download = `${r.id}_${r.client.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+ a.click();
+ }
+
+ function renderSharedOfferPage(encodedPayload) {
+ const viewer = document.getElementById('shared-offer-viewer');
+ viewer.classList.remove('hidden');
+ try {
+ const jsonStr = decodeURIComponent(escape(atob(encodedPayload)));
+ const data = JSON.parse(jsonStr);
+ const totalNet = data.it.reduce((s, i) => s + (i.op * i.q), 0);
+
+ const rowsHtml = data.it.map(i => `
+ <tr class="border-b border-slate-200">
+ <td class="py-3 px-3">
+ <div class="font-mono text-xs font-bold text-indigo-600">${escapeHtml(i.s)} ${i.al ? `(${escapeHtml(i.al)})` : ''}</div>
+ <div class="font-bold text-slate-900 text-sm">${escapeHtml(i.nm)}</div>
+ </td>
+ <td class="py-3 px-3 text-center font-semibold text-sm">${i.q} ${escapeHtml(i.u)}</td>
+ <td class="py-3 px-3 text-right font-bold text-slate-900 text-sm">${formatCurrency(i.op)}</td>
+ <td class="py-3 px-3 text-right font-extrabold text-indigo-700 text-sm">${formatCurrency(i.op * i.q)}</td>
+ <td class="py-3 px-3 text-center">
+ <div class="flex flex-wrap justify-center gap-1.5">
+ ${i.st ? `<a href="${escapeHtml(i.st)}" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs"><i class="fa-solid fa-file-pdf mr-1"></i> ST</a>` : ''}
+ ${i.ss ? `<a href="${escapeHtml(i.ss)}" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs"><i class="fa-solid fa-triangle-exclamation mr-1"></i> SS</a>` : ''}
+ ${(!i.st && !i.ss) ? `<span class="text-xs text-slate-400">—</span>` : ''}
+ </div>
+ </td>
+ </tr>
+ `).join('');
+
+ viewer.innerHTML = `
+ <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-200 p-6 sm:p-8 space-y-6">
+ <div class="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-slate-200 pb-5">
+ <div>
+ <h1 class="text-xl font-extrabold text-slate-900">${escapeHtml(data.co?.name || 'Offerta Commerciale')}</h1>
+ <p class="text-xs text-slate-500">${escapeHtml(data.co?.address || '')} • ${escapeHtml(data.co?.vat || '')}</p>
+ <p class="text-xs text-slate-500">${escapeHtml(data.co?.contact || '')}</p>
+ </div>
+ <div class="sm:text-right">
+ <span class="inline-block bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-1">Offerta ${escapeHtml(data.id)}</span>
+ <div class="text-xs text-slate-500">Data: ${escapeHtml(data.d)}</div>
+ </div>
+ </div>
+ <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-wrap justify-between gap-4 text-sm">
+ <div><span class="text-xs text-slate-400 uppercase font-bold block">Cliente</span><strong>${escapeHtml(data.c)}</strong></div>
+ <div><span class="text-xs text-slate-400 uppercase font-bold block">Agente</span><strong>${escapeHtml(data.a)}</strong></div>
+ </div>
+ <div class="overflow-x-auto">
+ <table class="w-full text-left border-collapse">
+ <thead>
+ <tr class="bg-slate-900 text-white text-xs uppercase">
+ <th class="py-2.5 px-3 rounded-tl-xl">Articolo</th>
+ <th class="py-2.5 px-3 text-center">Q.tà</th>
+ <th class="py-2.5 px-3 text-right">Prezzo Un.</th>
+ <th class="py-2.5 px-3 text-right">Totale</th>
+ <th class="py-2.5 px-3 text-center rounded-tr-xl">Schede ST / SS</th>
+ </tr>
+ </thead>
+ <tbody>${rowsHtml}</tbody>
+ </table>
+ </div>
+ <div class="flex justify-between items-center pt-4 border-t border-slate-200">
+ <div class="text-xs text-slate-500">${data.n ? `<strong>Note:</strong> ${escapeHtml(data.n)}` : 'Prezzi IVA esclusa.'}</div>
+ <div class="text-right">
+ <span class="text-xs text-slate-500 block">Totale Netto Offerta</span>
+ <span class="text-2xl font-extrabold text-indigo-700">${formatCurrency(totalNet)}</span>
+ </div>
+ </div>
+ </div>
+ `;
+ } catch (e) {
+ viewer.innerHTML = `<div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow text-center text-rose-600 font-bold">Link offerta non valido o corrotto.</div>`;
+ }
+ }
+
+ // ==================== STORICO OFFERTE ====================
+ function renderHistory() {
+ const container = document.getElementById('history-list');
+ const clearBtn = document.getElementById('btn-clear-history');
+ document.getElementById('badge-history-count').textContent = quoteHistory.length;
+
+ if (!quoteHistory.length) {
+ if (clearBtn) clearBtn.classList.add('hidden');
+ container.innerHTML = `<div class="col-span-full bg-white p-10 rounded-2xl border border-dashed border-slate-300 text-center text-slate-400 text-sm">Nessuna offerta salvata nello storico.</div>`;
+ return;
+ }
+
+ if (clearBtn) clearBtn.classList.remove('hidden');
+
+ container.innerHTML = quoteHistory.map((q, idx) => `
+ <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between space-y-3 hover:border-indigo-200 transition">
+ <div>
+ <div class="flex justify-between items-center text-xs mb-1">
+ <span class="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">${escapeHtml(q.id)}</span>
+ <span class="text-slate-400">${escapeHtml(q.date)}</span>
+ </div>
+ <h4 class="font-bold text-slate-900 text-base">${escapeHtml(q.client)}</h4>
+ <p class="text-xs text-slate-500 mt-0.5">Agente: ${escapeHtml(q.agent)} • ${q.items.length} articoli</p>
+ </div>
+ <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-1.5">
+ <span class="font-extrabold text-slate-900 text-sm">${formatCurrency(q.totalNet)}</span>
+ <div class="flex items-center gap-1">
+ <button onclick="printQuoteRecord(quoteHistory[${idx}])" class="px-2 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold" title="Stampa PDF">
+ <i class="fa-solid fa-print"></i>
+ </button>
+ <button onclick="openEmailShareModal(quoteHistory[${idx}])" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-semibold" title="Invia Email / Link">
+ <i class="fa-solid fa-envelope"></i>
+ </button>
+ <button onclick="loadQuoteFromHistory(${idx})" class="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold" title="Carica nel configuratore">
+ <i class="fa-solid fa-copy"></i>
+ </button>
+ <button onclick="deleteQuoteFromHistory(${idx})" class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold" title="Elimina">
+ <i class="fa-solid fa-trash-can"></i>
+ </button>
+ </div>
+ </div>
+ </div>
+ `).join('');
+ }
+
+ async function deleteQuoteFromHistory(idx) {
+ const target = quoteHistory[idx];
+ if (!target) return;
+ if (!confirm(`Vuoi eliminare definitivamente l'offerta ${target.id} per "${target.client}"?`)) return;
+ quoteHistory.splice(idx, 1);
+ await saveAllState(true);
+ renderHistory();
+ showToast(`Offerta ${target.id} eliminata.`);
+ }
+
+ async function clearAllHistory() {
+ if (!quoteHistory.length) return;
+ if (!confirm(`Sei sicuro di voler eliminare tutte le ${quoteHistory.length} offerte dallo storico?`)) return;
+ quoteHistory = [];
+ await saveAllState(true);
+ renderHistory();
+ showToast("Storico offerte svuotato.");
+ }
+
+ function loadQuoteFromHistory(idx) {
+ const q = quoteHistory[idx];
+ currentQuote = JSON.parse(JSON.stringify(q.items));
+ document.getElementById('quote-client').value = q.client;
+ document.getElementById('quote-client-email').value = q.clientEmail || '';
+ document.getElementById('quote-agent').value = q.agent;
+ document.getElementById('quote-notes').value = q.notes;
+ saveAllState(false);
+ renderCatalog();
+ renderQuote();
+ switchTab('catalog');
+ showToast(`Offerta ${q.id} caricata!`);
+ }
+
+ // ==================== IMPORTAZIONE LISTINO CSV & IMPORT LINK GOOGLE DRIVE (ST / SS / IMG) ====================
+ function parseCSVLine(line, delimiter = ';') {
+ const result = [];
+ let current = '', inQuotes = false;
+ for (let i = 0; i < line.length; i++) {
+ const ch = line[i];
+ if (ch === '"') {
+ if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+ else inQuotes = !inQuotes;
+ } else if (ch === delimiter && !inQuotes) {
+ result.push(current.trim());
+ current = '';
+ } else current += ch;
+ }
+ result.push(current.trim());
+ return result;
+ }
+
+ function parseItalianNumber(val) {
+ if (typeof val === 'number') return val;
+ if (!val) return 0;
+ let str = String(val).replace(/[€$\s]/g, '').trim();
+ if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+ else if (str.includes(',')) str = str.replace(',', '.');
+ const num = parseFloat(str);
+ return isNaN(num) ? 0 : num;
+ }
+
+ async function handleFileImport(event) {
+ if (!isTonyusAdmin()) return;
+ const file = event.target.files[0];
+ if (!file) return;
+ const reader = new FileReader();
+ reader.onload = async function(e) {
+ try {
+ const content = e.target.result;
+ if (file.name.toLowerCase().endsWith('.json')) {
+ const parsed = JSON.parse(content);
+ if (Array.isArray(parsed)) catalog = parsed;
+ } else {
+ const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+ if (lines.length < 2) return showToast("File CSV vuoto.");
+ const delimiter = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
+ const headers = parseCSVLine(lines[0], delimiter).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+ const findCol = (keys) => headers.findIndex(h => keys.some(k => h === k || h.includes(k)));
+ const idxAlias = findCol(['alias', 'codiceinterno', 'interno']);
+ const idxSku = findCol(['codicearticolo', 'codice', 'sku', 'art']);
+ const idxName = findCol(['descrizionearticolo', 'descrizione', 'articolo', 'nome']);
+ const idxFam = findCol(['famiglia', 'categoria']);
+ const idxSubFam = findCol(['sottofamiglia', 'sottocategoria']);
+ const idxStatus = findCol(['stato', 'status']);
+ const idxCostNet = findCol(['nettoacquisto', 'netto', 'costo']);
+ const idxPrice = findCol(['prezzolistino', 'listino', 'prezzo']);
+ const idxUnit = findCol(['um', 'unita']);
+ const idxImage = findCol(['immagine', 'foto', 'image', 'urlimmagine']);
+ const idxSt = findCol(['schedatecnica', 'st', 'urlst']);
+ const idxSds = findCol(['schedasicurezza', 'sds', 'ss', 'urlss']);
+
+ const imported = [];
+ for (let i = 1; i < lines.length; i++) {
+ const cols = parseCSVLine(lines[i], delimiter);
+ if (cols.length < 2) continue;
+ const sku = (idxSku !== -1 ? cols[idxSku] : cols[1]) || '';
+ const alias = (idxAlias !== -1 ? cols[idxAlias] : cols[0]) || '';
+ const name = (idxName !== -1 ? cols[idxName] : cols[2]) || '';
+ if (!sku && !name) continue;
+ imported.push({
+ sku: sku.trim(),
+ alias: alias.trim(),
+ name: name.trim(),
+ category: (idxFam !== -1 && cols[idxFam] ? cols[idxFam] : 'Generale').trim(),
+ subCategory: (idxSubFam !== -1 && cols[idxSubFam] ? cols[idxSubFam] : '').trim(),
+ status: (idxStatus !== -1 && cols[idxStatus] ? cols[idxStatus] : 'In uso').trim(),
+ purchaseNet: idxCostNet !== -1 ? parseItalianNumber(cols[idxCostNet]) : 0,
+ price: idxPrice !== -1 ? parseItalianNumber(cols[idxPrice]) : 0,
+ unit: (idxUnit !== -1 && cols[idxUnit] ? cols[idxUnit] : 'PZ').trim().toUpperCase(),
+ image: idxImage !== -1 && cols[idxImage] ? cols[idxImage].trim() : '',
+ stUrl: idxSt !== -1 && cols[idxSt] ? cols[idxSt].trim() : '',
+ sdsUrl: idxSds !== -1 && cols[idxSds] ? cols[idxSds].trim() : '',
+ techDesc: ''
+ });
+ }
+ if (imported.length) catalog = imported;
+ }
+ await saveAllState(true);
+ refreshAllUI();
+ showToast(`Importati ${catalog.length} articoli!`);
+ } catch (err) {
+ showToast("Errore durante l'importazione.");
+ }
+ event.target.value = '';
+ };
+ reader.readAsText(file, 'UTF-8');
+ }
+
+ async function handleDriveLinksImport(event) {
+ if (!isTonyusAdmin()) return;
+ const file = event.target.files[0];
+ if (!file) return;
+ if (!catalog.length) {
+ showToast("Importa prima il Listino Prodotti!");
+ event.target.value = '';
+ return;
+ }
+
+ const reader = new FileReader();
+ reader.onload = async function(e) {
+ try {
+ const content = e.target.result;
+ const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+ if (lines.length < 2) return showToast("File CSV Link Drive vuoto.");
+
+ const delimiter = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
+ const headers = parseCSVLine(lines[0], delimiter).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+ const idxFile = headers.findIndex(h => h.includes('nomefile') || h === 'file' || h === 'nome');
+ const idxType = headers.findIndex(h => h === 'tipo' || h === 'type' || h === 'categoria');
+ const idxCode = headers.findIndex(h => h === 'codice' || h.includes('sku') || h.includes('alias') || h.includes('articolo'));
+ const idxUrl = headers.findIndex(h => h.includes('linkdrive') || h.includes('link') || h.includes('url'));
+
+ let matchedCount = 0;
+
+ for (let i = 1; i < lines.length; i++) {
+ const cols = parseCSVLine(lines[i], delimiter);
+ const rawFileName = idxFile !== -1 ? (cols[idxFile] || '').trim() : (cols[0] || '').trim();
+ const rawType = idxType !== -1 ? (cols[idxType] || '').trim().toUpperCase() : (cols[1] || '').trim().toUpperCase();
+ const rawCode = idxCode !== -1 ? (cols[idxCode] || '').trim() : (cols[2] || '').trim();
+ const rawUrl = idxUrl !== -1 ? (cols[idxUrl] || '').trim() : (cols[3] || '').trim();
+
+ if (!rawUrl || !rawUrl.startsWith('http')) continue;
+
+ let docType = '';
+ if (rawType === 'ST' || rawType.includes('TECNIC')) {
+ docType = 'ST';
+ } else if (rawType === 'SS' || rawType === 'SDS' || rawType.includes('SICUREZ')) {
+ docType = 'SS';
+ } else if (rawType === 'IMG' || rawType.includes('IMMAGIN') || rawType.includes('FOTO')) {
+ docType = 'IMG';
+ } else {
+ const lowerFile = rawFileName.toLowerCase();
+ if (/\.(jpg|jpeg|png|webp|gif)$/i.test(lowerFile)) {
+ docType = 'IMG';
+ } else if (/^ss([^a-z0-9]|$)|[^a-z0-9](ss|sds|sicurezza)([^a-z0-9]|$)/i.test(lowerFile)) {
+ docType = 'SS';
+ } else {
+ docType = 'ST';
+ }
+ }
+
+ let codeCandidate = rawCode;
+ if (!codeCandidate && rawFileName) {
+ codeCandidate = rawFileName
+ .replace(/\.[^.]+$/, '')
+ .replace(/^(st|ss|sds|img)[_\-\s]+/i, '')
+ .replace(/[_\-\s]+(st|ss|sds|img)$/i, '');
+ }
+ const normCode = normalizeToken(codeCandidate);
+ if (!normCode) continue;
+
+ const matchingProducts = catalog.filter(p =>
+ normalizeToken(p.sku) === normCode || normalizeToken(p.alias) === normCode
+ );
+
+ matchingProducts.forEach(prod => {
+ if (docType === 'ST') {
+ prod.stUrl = rawUrl;
+ matchedCount++;
+ } else if (docType === 'SS') {
+ prod.sdsUrl = rawUrl;
+ matchedCount++;
+ } else if (docType === 'IMG') {
+ prod.image = rawUrl;
+ matchedCount++;
+ }
+ });
+ }
+
+ await saveAllState(true);
+ refreshAllUI();
+ showToast(`Collegati ${matchedCount} file Drive (ST / SS / IMG) al catalogo!`);
+ } catch (err) {
+ showToast("Errore nella lettura del CSV Link Drive.");
+ }
+ event.target.value = '';
+ };
+ reader.readAsText(file, 'UTF-8');
+ }
+
+ // ==================== GESTIONE PRODOTTI & COPERTINE (SOLO TONYUS) ====================
+ function renderFamilyMediaManager() {
+ if (!isTonyusAdmin()) return;
+ const container = document.getElementById('family-media-manager');
+ const families = [...new Set(catalog.map(p => p.category).filter(Boolean))].sort();
+ if (!families.length) {
+ container.innerHTML = `<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-sm">Importa prima un listino per gestire le copertine delle famiglie.</div>`;
+ return;
+ }
+
+ container.innerHTML = families.map(fam => {
+ const imgUrl = resolveCategoryImage(fam);
+ const safeKey = fam.replace(/'/g, "\\'");
+ return `
+ <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center gap-4">
+ <div class="w-20 h-16 rounded-xl bg-slate-50 border border-slate-200 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+ ${imgUrl ? `<img src="${imgUrl}" class="max-h-full max-w-full object-contain" />` : `<i class="fa-regular fa-image text-slate-300 text-xl"></i>`}
+ </div>
+ <div class="flex-1 min-w-0">
+ <div class="text-[10px] uppercase font-bold text-indigo-600">Famiglia</div>
+ <h4 class="font-bold text-slate-900 text-sm truncate">${escapeHtml(fam)}</h4>
+ <label class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer transition">
+ <i class="fa-solid fa-upload"></i> Carica Foto
+ <input type="file" accept="image/*" onchange="uploadCategoryImage(event, '${safeKey}')" class="hidden" />
+ </label>
+ </div>
+ </div>
+ `;
+ }).join('');
+ }
+
+ function renderManageTable() {
+ if (!isTonyusAdmin()) return;
+ const q = (document.getElementById('manage-search')?.value || '').toLowerCase().trim();
+ const filtered = catalog.filter(p =>
+ !q || [p.sku, p.alias, p.name, p.category, p.subCategory].join(' ').toLowerCase().includes(q)
+ );
+ document.getElementById('manage-count-label').textContent = `${filtered.length} articoli`;
+ document.getElementById('manage-table-body').innerHTML = filtered.slice(0, 150).map(p => {
+ const realIdx = catalog.findIndex(item => item.sku === p.sku);
+ const stAsset = resolveProductAsset(p, 'st');
+ const ssAsset = resolveProductAsset(p, 'sds');
+ const imgAsset = resolveProductAsset(p, 'image');
+ return `
+ <tr class="hover:bg-slate-50">
+ <td class="py-2.5 px-4 font-mono text-xs">
+ <div class="font-bold text-indigo-600">${escapeHtml(p.sku)}</div>
+ ${p.alias ? `<div class="text-slate-400">${escapeHtml(p.alias)}</div>` : ''}
+ </td>
+ <td class="py-2.5 px-4">
+ <div class="font-semibold text-slate-800 text-xs">${escapeHtml(p.name)}</div>
+ <div class="flex items-center gap-1.5 mt-1">
+ <span class="text-[10px] px-1.5 py-0.2 rounded ${getStatusBadgeStyle(p.status)}">${escapeHtml(p.status || 'In uso')}</span>
+ ${imgAsset.url ? `<span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 font-bold">IMG ✓</span>` : ''}
+ ${stAsset.url ? `<a href="${stAsset.url}" target="_blank" class="text-[10px] px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 font-bold hover:underline">ST ✓</a>` : ''}
+ ${ssAsset.url ? `<a href="${ssAsset.url}" target="_blank" class="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold hover:underline">SS ✓</a>` : ''}
+ </div>
+ </td>
+ <td class="py-2.5 px-4 text-xs text-slate-600">
+ <div class="font-semibold">${escapeHtml(p.category)}</div>
+ ${p.subCategory ? `<div class="text-[11px] text-slate-400">${escapeHtml(p.subCategory)}</div>` : ''}
+ </td>
+ <td class="py-2.5 px-4 text-right text-xs text-slate-600">${formatCurrency(p.purchaseNet)}</td>
+ <td class="py-2.5 px-4 text-right font-bold text-slate-900 text-xs">${formatCurrency(p.price)}</td>
+ <td class="py-2.5 px-4 text-right space-x-1">
+ <button onclick="openProductModal(${realIdx})" class="p-1.5 text-slate-400 hover:text-indigo-600" title="Modifica articolo e link ST/SS"><i class="fa-solid fa-pen"></i></button>
+ <button onclick="deleteProduct(${realIdx})" class="p-1.5 text-slate-400 hover:text-rose-600" title="Elimina"><i class="fa-solid fa-trash"></i></button>
+ </td>
+ </tr>
+ `;
+ }).join('');
+ }
+
+ function openProductModal(index = -1) {
+ if (!isTonyusAdmin()) return;
+ document.getElementById('prod-edit-index').value = index;
+ if (index >= 0) {
+ const p = catalog[index];
+ document.getElementById('modal-title').textContent = 'Modifica Articolo';
+ document.getElementById('prod-sku').value = p.sku || '';
+ document.getElementById('prod-alias').value = p.alias || '';
+ document.getElementById('prod-category').value = p.category || '';
+ document.getElementById('prod-subcategory').value = p.subCategory || '';
+ document.getElementById('prod-name').value = p.name || '';
+ document.getElementById('prod-tech-desc').value = p.techDesc || '';
+ document.getElementById('prod-cost-net').value = p.purchaseNet || 0;
+ document.getElementById('prod-price').value = p.price || 0;
+ document.getElementById('prod-unit').value = p.unit || 'PZ';
+ document.getElementById('prod-status').value = p.status || 'In uso';
+ document.getElementById('prod-image').value = p.image || '';
+ document.getElementById('prod-st').value = p.stUrl || '';
+ document.getElementById('prod-sds').value = p.sdsUrl || '';
+ } else {
+ document.getElementById('modal-title').textContent = 'Nuovo Articolo';
+ document.getElementById('product-form').reset();
+ }
+ document.getElementById('product-modal').classList.remove('hidden');
+ }
+
+ function closeProductModal() { document.getElementById('product-modal').classList.add('hidden'); }
+
+ async function saveProductFromModal(e) {
+ e.preventDefault();
+ if (!isTonyusAdmin()) return;
+ const idx = parseInt(document.getElementById('prod-edit-index').value, 10);
+ const prodObj = {
+ sku: document.getElementById('prod-sku').value.trim().toUpperCase(),
+ alias: document.getElementById('prod-alias').value.trim().toUpperCase(),
+ category: document.getElementById('prod-category').value.trim() || 'Generale',
+ subCategory: document.getElementById('prod-subcategory').value.trim(),
+ name: document.getElementById('prod-name').value.trim(),
+ techDesc: document.getElementById('prod-tech-desc').value.trim(),
+ purchaseNet: parseFloat(document.getElementById('prod-cost-net').value) || 0,
+ price: parseFloat(document.getElementById('prod-price').value) || 0,
+ unit: document.getElementById('prod-unit').value.trim().toUpperCase() || 'PZ',
+ status: document.getElementById('prod-status').value,
+ image: document.getElementById('prod-image').value.trim(),
+ stUrl: document.getElementById('prod-st').value.trim(),
+ sdsUrl: document.getElementById('prod-sds').value.trim()
+ };
+ if (idx >= 0) catalog[idx] = prodObj;
+ else catalog.unshift(prodObj);
+ await saveAllState(true);
+ closeProductModal();
+ refreshAllUI();
+ showToast("Articolo salvato!");
+ }
+
+ async function deleteProduct(idx) {
+ if (!isTonyusAdmin()) return;
+ if (!confirm("Eliminare questo articolo?")) return;
+ catalog.splice(idx, 1);
+ await saveAllState(true);
+ refreshAllUI();
+ }
+
+ async function clearCatalogData() {
+ if (!isTonyusAdmin()) return;
+ if (!confirm("Svuotare l'intero catalogo?")) return;
+ catalog = [];
+ await saveAllState(true);
+ refreshAllUI();
+ }
+
+ function exportCatalogCSV() {
+ const headers = ['Codice Interno', 'Codice Articolo', 'Descrizione Articolo', 'Famiglia', 'Sottofamiglia', 'Stato', 'Netto Acquisto', 'Prezzo Listino', 'UM', 'Immagine', 'Scheda Tecnica', 'Scheda Sicurezza'];
+ const rows = catalog.map(p => [
+ p.alias || '', p.sku, `"${(p.name || '').replace(/"/g, '""')}"`, p.category, p.subCategory || '', p.status || 'In uso',
+ (p.purchaseNet || 0).toFixed(4).replace('.', ','), (p.price || 0).toFixed(2).replace('.', ','), p.unit || 'PZ',
+ p.image || '', p.stUrl || '', p.sdsUrl || ''
+ ].join(';'));
+ const blob = new Blob(['\uFEFF' + [headers.join(';'), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+ const a = document.createElement('a');
+ a.href = URL.createObjectURL(blob);
+ a.download = `listino_b2b_${new Date().toISOString().slice(0,10)}.csv`;
+ a.click();
+ }
+
+ function exportCatalogJSON() {
+ const blob = new Blob([JSON.stringify(catalog, null, 2)], { type: 'application/json' });
+ const a = document.createElement('a');
+ a.href = URL.createObjectURL(blob);
+ a.download = `catalogo_b2b_${new Date().toISOString().slice(0,10)}.json`;
+ a.click();
+ }
+
+ // ==================== IMPOSTAZIONI AZIENDA & NAVIGAZIONE ====================
+ function toggleGasGuide() {
+ document.getElementById('gas-guide-box').classList.toggle('hidden');
+ }
+
+ function loadSettingsFields() {
+ document.getElementById('set-company-name').value = companyInfo.name || '';
+ document.getElementById('set-company-tagline').value = companyInfo.tagline || '';
+ document.getElementById('set-company-vat').value = companyInfo.vat || '';
+ document.getElementById('set-company-contact').value = companyInfo.contact || '';
+ document.getElementById('set-company-address').value = companyInfo.address || '';
+ document.getElementById('set-docs-base-url').value = companyInfo.docsBaseUrl || '';
+ document.getElementById('set-cloud-api-url').value = companyInfo.cloudApiUrl || '';
+ renderLogoPreview();
+ }
+
+ function renderLogoPreview() {
+ const preview = document.getElementById('settings-logo-preview');
+ const placeholder = document.getElementById('settings-logo-placeholder');
+ const removeBtn = document.getElementById('btn-remove-logo');
+ if (companyInfo.logo) {
+ preview.src = companyInfo.logo;
+ preview.classList.remove('hidden');
+ placeholder.classList.add('hidden');
+ removeBtn.classList.remove('hidden');
+ } else {
+ preview.src = '';
+ preview.classList.add('hidden');
+ placeholder.classList.remove('hidden');
+ removeBtn.classList.add('hidden');
+ }
+ }
+
+ function handleLogoUpload(event) {
+ const file = event.target.files[0];
+ if (!file) return;
+ const reader = new FileReader();
+ reader.onload = function(e) {
+ const img = new Image();
+ img.onload = function() {
+ const canvas = document.createElement('canvas');
+ const ratio = Math.min(450 / img.width, 160 / img.height, 1);
+ canvas.width = Math.round(img.width * ratio);
+ canvas.height = Math.round(img.height * ratio);
+ canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+ companyInfo.logo = canvas.toDataURL('image/png');
+ renderLogoPreview();
+ updateCompanyBrandingUI();
+ };
+ img.src = e.target.result;
+ };
+ reader.readAsDataURL(file);
+ }
+
+ function removeCompanyLogo() {
+ companyInfo.logo = '';
+ renderLogoPreview();
+ updateCompanyBrandingUI();
+ }
+
+ async function saveCompanySettings() {
+ companyInfo.name = document.getElementById('set-company-name').value.trim() || 'La Tua Azienda S.r.l.';
+ companyInfo.tagline = document.getElementById('set-company-tagline').value.trim();
+ companyInfo.vat = document.getElementById('set-company-vat').value.trim();
+ companyInfo.contact = document.getElementById('set-company-contact').value.trim();
+ companyInfo.address = document.getElementById('set-company-address').value.trim();
+ if (isTonyusAdmin()) {
+ companyInfo.docsBaseUrl = document.getElementById('set-docs-base-url').value.trim();
+ companyInfo.cloudApiUrl = document.getElementById('set-cloud-api-url').value.trim();
+ }
+ await saveAllState(true);
+ updateCompanyBrandingUI();
+ if (companyInfo.cloudApiUrl) {
+ document.getElementById('btn-cloud-sync').classList.remove('hidden');
+ document.getElementById('btn-cloud-sync').classList.add('flex');
+ }
+ showToast("Impostazioni salvate!");
+ }
+
+ function updateCompanyBrandingUI() {
+ const banner = document.getElementById('quote-company-banner');
+ if (!banner) return;
+ banner.innerHTML = `
+ ${companyInfo.logo
+ ? `<div class="h-6 w-12 bg-slate-50 rounded border border-slate-100 p-0.5 flex items-center justify-center shrink-0"><img src="${companyInfo.logo}" class="max-h-full max-w-full object-contain" /></div>`
+ : `<div class="w-6 h-6 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 text-[10px]"><i class="fa-solid fa-building"></i></div>`
+ }
+ <div class="min-w-0 flex-1">
+ <div class="text-[11px] font-bold text-slate-800 truncate">${escapeHtml(companyInfo.name)}</div>
+ </div>
+ <i class="fa-solid fa-pen text-[9px] text-slate-400"></i>
+ `;
+ }
+
+ function switchTab(tabName) {
+ // Protezione accesso ai tab amministrativi solo per Tonyus
+ if ((tabName === 'manage' || tabName === 'families') && !isTonyusAdmin()) {
+ showToast("Accesso riservato all'amministratore.");
+ return;
+ }
+
+ ['catalog', 'families', 'manage', 'history', 'settings'].forEach(t => {
+ const sec = document.getElementById(`tab-${t}`);
+ const btn = document.getElementById(`nav-${t}`);
+ if (!sec || !btn) return;
+ if (t === tabName) {
+ sec.classList.remove('hidden');
+ btn.classList.add('bg-indigo-600', 'text-white', 'shadow');
+ btn.classList.remove('text-slate-300', 'hover:bg-slate-700');
+ } else {
+ sec.classList.add('hidden');
+ btn.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+ btn.classList.add('text-slate-300', 'hover:bg-slate-700');
+ }
+ });
+ if (tabName === 'manage') renderManageTable();
+ if (tabName === 'families') renderFamilyMediaManager();
+ if (tabName === 'history') renderHistory();
+ }
+ </script>
+</body>
+</html>
