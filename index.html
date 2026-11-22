@@ -837,7 +837,7 @@ function doPost(e) {
  }
  }
 
- async function saveAllState(pushToCloud = true) {
+async function saveAllState(pushToCloud = true) {
  const stateBundle = {
  catalog,
  currentQuote,
@@ -846,6 +846,27 @@ function doPost(e) {
  companyInfo
  };
  localStorage.setItem(STORAGE_KEY, JSON.stringify(stateBundle));
+
+ if (pushToCloud && companyInfo.cloudApiUrl && companyInfo.cloudApiUrl.startsWith('http')) {
+ try {
+ const cloudPayload = {
+ catalog,
+ quoteHistory,
+ customFamilyImages,
+ companyInfo
+ };
+ await fetch(companyInfo.cloudApiUrl, {
+ method: 'POST',
+ mode: 'no-cors',
+ headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+ body: JSON.stringify(cloudPayload)
+ });
+ } catch (err) {
+ console.warn("Sincronizzazione Cloud Drive non riuscita:", err);
+ showToast("Attenzione: salvataggio su Cloud Drive non riuscito.");
+ }
+ }
+ }
 
  if (pushToCloud && companyInfo.cloudApiUrl && companyInfo.cloudApiUrl.startsWith('http')) {
  try {
