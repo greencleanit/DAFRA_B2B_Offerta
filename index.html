@@ -1736,8 +1736,6 @@ clientContact: document.getElementById('quote-client-contact').value.trim(),
  ${record.includeDetails && stDesc ? `<div class="text-[10px] text-slate-600 mt-1 leading-snug">${escapeHtml(stDesc)}</div>` : ''}
  </td>
  <td class="py-2 px-1.5 text-center font-semibold text-xs align-top">${item.qty} ${escapeHtml(fresh.unit || 'PZ')}</td>
- <td class="py-2 px-1.5 text-right text-slate-500 text-xs align-top">${formatCurrency(item.listPrice)}</td>
- <td class="py-2 px-1.5 text-right text-emerald-700 font-medium text-xs align-top">${itemDiscount > 0 ? '-' + itemDiscount.toFixed(1) + '%' : '—'}</td>
  <td class="py-2 px-1.5 text-right font-bold text-slate-900 text-xs align-top">${formatCurrency(item.offeredPrice)}</td>
  <td class="py-2 px-1.5 text-right font-extrabold text-indigo-700 text-xs align-top">${formatCurrency(item.offeredPrice * item.qty)}</td>
  ${record.includeDetails ? `<td class="py-2 px-1 text-center align-top">${qrBlock}</td>` : ''}
@@ -1789,8 +1787,6 @@ clientContact: document.getElementById('quote-client-contact').value.trim(),
  ${record.includeImages ? `<th class="py-2 px-1.5 rounded-tl-lg">Foto</th>` : ''}
  <th class="py-2 px-1.5 ${!record.includeImages ? 'rounded-tl-lg' : ''}">Articolo</th>
  <th class="py-2 px-1.5 text-center">Q.tà</th>
- <th class="py-2 px-1.5 text-right">Listino</th>
- <th class="py-2 px-1.5 text-right">Sc.</th>
  <th class="py-2 px-1.5 text-right">Netto Un.</th>
  <th class="py-2 px-1.5 text-right ${!record.includeDetails ? 'rounded-tr-lg' : ''}">Totale</th>
  ${record.includeDetails ? `<th class="py-2 px-1 text-center rounded-tr-lg">QR & Link ST/SS</th>` : ''}
@@ -1805,8 +1801,6 @@ clientContact: document.getElementById('quote-client-contact').value.trim(),
  <p class="text-[10px] text-slate-400 mt-2">Prezzi IVA esclusa. Inquadra i QR Code ST/SS o clicca sui tasti blu/arancio nel PDF per scaricare Schede Tecniche e di Sicurezza.</p>
  </div>
  <div class="w-64 bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 text-xs">
- <div class="flex justify-between text-slate-500"><span>Totale Listino:</span><span>${formatCurrency(record.totalList)}</span></div>
- <div class="flex justify-between text-emerald-600 font-semibold"><span>Sconto (${totalDiscountPct}%):</span><span>- ${formatCurrency(saved)}</span></div>
  <div class="flex justify-between text-sm font-extrabold text-slate-900 pt-1.5 border-t border-slate-300"><span>TOTALE NETTO:</span><span class="text-indigo-700">${formatCurrency(record.totalNet)}</span></div>
  </div>
  </div>
