@@ -272,6 +272,15 @@
  </div>
  </div>
 
+  <div class="grid grid-cols-12 gap-1.5 items-center">
+  <select onchange="if(this.value) document.getElementById('quote-free-shipping').value = this.value" class="col-span-5 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+    <option value="Consegna gratuita per ordini superiori a € 50 (Roma) / € 300 (Fuori Roma)">Consegna: Standard</option>
+    <option value="Consegna gratuita per ordini superiori a € 50 (Roma)">Consegna: Roma (€ 50)</option>
+    <option value="Consegna gratuita per ordini superiori a € 300 (Fuori Roma)">Consegna: Fuori Roma (€ 300)</option>
+  </select>
+  <input type="text" id="quote-free-shipping" value="Consegna gratuita per ordini superiori a € 50 (Roma) / € 300 (Fuori Roma)" placeholder="Condizioni minimo consegna gratuita..." class="col-span-7 px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+</div>
+  
  <!-- TASTI DI STAMPA & CONDIVISIONE SEMPRE VISIBILI ANCHE SU 1366x768 -->
  <div class="grid grid-cols-12 gap-1.5">
  <button onclick="generateAndPrintQuote()" class="col-span-5 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1.5" title="Salva l'offerta e genera il PDF con QR Code e tasti link ST/SS">
@@ -1634,6 +1643,7 @@ clientVat: document.getElementById('quote-client-vat').value.trim(),
 clientContact: document.getElementById('quote-client-contact').value.trim(),
  agent: document.getElementById('quote-agent').value.trim() || sessionStorage.getItem(AUTH_SESSION_KEY) || 'Direzione Commerciale',
  notes: document.getElementById('quote-notes').value.trim(),
+ freeShippingTerms: document.getElementById('quote-free-shipping').value.trim(),
  includeImages: document.getElementById('include-images-in-pdf').checked,
  includeDetails: document.getElementById('include-details-in-pdf').checked,
  companySnapshot: JSON.parse(JSON.stringify(companyInfo)),
@@ -1795,9 +1805,11 @@ clientContact: document.getElementById('quote-client-contact').value.trim(),
  </table>
 
  <div class="flex justify-between items-start gap-6">
- <div class="flex-1 text-xs">
- ${record.notes ? `<div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><div class="font-bold text-slate-700 mb-1">Note e Condizioni:</div><p class="text-slate-600 whitespace-pre-line">${escapeHtml(record.notes)}</p></div>` : ''}
- <p class="text-[10px] text-slate-400 mt-2">Prezzi IVA esclusa. Inquadra i QR Code ST/SS o clicca sui tasti blu/arancio nel PDF per scaricare Schede Tecniche e di Sicurezza.</p>
+ <div class="flex-1 text-xs space-y-2">
+${record.freeShippingTerms ? `<div class="px-3 py-2 bg-indigo-50/70 rounded-xl border border-indigo-200 text-indigo-950 font-semibold"><i class="fa-solid fa-truck text-indigo-600 mr-1.5"></i>${escapeHtml(record.freeShippingTerms)}</div>` : ''}
+${record.notes ? `<div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><div class="font-bold text-slate-700 mb-1">Note e Condizioni:</div><p class="text-slate-600 whitespace-pre-line">${escapeHtml(record.notes)}</p></div>` : ''}
+<p class="text-[10px] text-slate-400">Prezzi IVA esclusa. Inquadra i QR Code ST/SS o clicca sui tasti blu/arancio nel PDF per scaricare Schede Tecniche e di Sicurezza.</p>
+</div>
  </div>
  <div class="w-64 bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 text-xs">
  <div class="flex justify-between text-sm font-extrabold text-slate-900 pt-1.5 border-t border-slate-300"><span>TOTALE NETTO:</span><span class="text-indigo-700">${formatCurrency(record.totalNet)}</span></div>
@@ -2232,6 +2244,7 @@ document.getElementById('quote-client-vat').value = q.clientVat || '';
 document.getElementById('quote-client-contact').value = q.clientContact || '';
  document.getElementById('quote-agent').value = q.agent;
  document.getElementById('quote-notes').value = q.notes;
+ document.getElementById('quote-free-shipping').value = q.freeShippingTerms !== undefined ? q.freeShippingTerms : 'Consegna gratuita per ordini superiori a € 50 (Roma) / € 300 (Fuori Roma)';
  saveAllState(false);
  renderCatalog();
  renderQuote();
@@ -2299,8 +2312,9 @@ document.getElementById('quote-client-contact').value = q.clientContact || '';
  const sku = (cols[0] || '').trim();
  const name = (cols[1] || '').trim();
  if (!sku && !name) continue;
- const rawStatus = (cols[2] || 'In uso').trim();
-if (/esaurimento|dismess/i.test(rawStatus)) continue;
+let rawStatus = (cols[2] || 'In uso').trim();
+if (/dismess/i.test(rawStatus)) continue;
+if (/in\s*progettazione/i.test(rawStatus)) rawStatus = 'A richiesta';
 
  const grossPurchase = parseItalianNumber(cols[4]);
  const sc1 = parseItalianNumber(cols[5]);
@@ -2350,8 +2364,9 @@ if (/esaurimento|dismess/i.test(rawStatus)) continue;
  const alias = (idxAlias !== -1 ? cols[idxAlias] : cols[0]) || '';
  const name = (idxName !== -1 ? cols[idxName] : cols[2]) || '';
  if (!sku && !name) continue;
- const rawStatus = (idxStatus !== -1 && cols[idxStatus] ? cols[idxStatus] : 'In uso').trim();
-if (/esaurimento|dismess/i.test(rawStatus)) continue;
+let rawStatus = (idxStatus !== -1 && cols[idxStatus] ? cols[idxStatus] : 'In uso').trim();
+if (/dismess/i.test(rawStatus)) continue;
+if (/in\s*progettazione/i.test(rawStatus)) rawStatus = 'A richiesta';
  const existing = catalog.find(p => p.sku === sku.trim());
 
  imported.push({
@@ -2360,7 +2375,7 @@ if (/esaurimento|dismess/i.test(rawStatus)) continue;
  name: name.trim(),
  category: (idxFam !== -1 && cols[idxFam] ? cols[idxFam] : 'Generale').trim(),
  subCategory: (idxSubFam !== -1 && cols[idxSubFam] ? cols[idxSubFam] : '').trim(),
- status: (idxStatus !== -1 && cols[idxStatus] ? cols[idxStatus] : 'In uso').trim(),
+ status: rawStatus,
  purchaseNet: idxCostNet !== -1 ? parseItalianNumber(cols[idxCostNet]) : 0,
  price: idxPrice !== -1 ? parseItalianNumber(cols[idxPrice]) : 0,
  unit: (idxUnit !== -1 && cols[idxUnit] ? cols[idxUnit] : 'PZ').trim().toUpperCase(),
