@@ -812,7 +812,27 @@ function doPost(e) {
  document.getElementById('btn-cloud-sync').classList.add('flex');
  await syncFromGoogleCloud(false);
  }
+ if (companyInfo.cloudApiUrl) {
+ document.getElementById('btn-cloud-sync').classList.remove('hidden');
+ document.getElementById('btn-cloud-sync').classList.add('flex');
+ await syncFromGoogleCloud(false);
+ }
 
+ try {
+   const resJson = await fetch('./catalogo_cloud.json?v=' + Date.now());
+   if (resJson.ok) {
+     const staticCatalog = await resJson.json();
+     if (Array.isArray(staticCatalog) && staticCatalog.length > 0) {
+       catalog = staticCatalog;
+       await saveAllState(false);
+     }
+   }
+ } catch (e) {
+   console.warn("Nessun file catalogo_cloud.json trovato", e);
+ }
+
+ refreshAllUI();
+ }
  refreshAllUI();
  }
 
