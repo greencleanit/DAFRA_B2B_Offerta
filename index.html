@@ -868,22 +868,7 @@ async function saveAllState(pushToCloud = true) {
  }
  }
 
- if (pushToCloud && companyInfo.cloudApiUrl && companyInfo.cloudApiUrl.startsWith('http')) {
- try {
- const cloudPayload = {
- catalog,
- quoteHistory,
- customFamilyImages,
- companyInfo
- };
- await fetch(companyInfo.cloudApiUrl, {
- method: 'POST',
- body: JSON.stringify(cloudPayload)
- });
- } catch (err) {
- console.warn("Sincronizzazione Cloud Drive non riuscita:", err);
- }
- }
+ 
  }
 
  async function syncFromGoogleCloud(notify = true) {
