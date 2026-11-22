@@ -227,8 +227,7 @@
  <div class="grid grid-cols-12 gap-1.5">
  <input type="text" id="quote-client" placeholder="Ragione Sociale Cliente *" class="col-span-7 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
  <input type="email" id="quote-client-email" placeholder="Email Cliente" class="col-span-5 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
- <input type="text" id="quote-client-address" placeholder="Sede Legale Cliente" class="col-span-5 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
- <input type="text" id="quote-client-vat" placeholder="P.IVA / C.F." class="col-span-3 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+
  <input type="text" id="quote-client-address" placeholder="Sede Legale Cliente" class="col-span-5 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
  <input type="text" id="quote-client-vat" placeholder="P.IVA / C.F." class="col-span-3 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
  <input type="text" id="quote-client-contact" placeholder="Referente" class="col-span-4 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" /> 
@@ -1766,7 +1765,7 @@ clientContact: document.getElementById('quote-client-contact').value.trim(),
 
  <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-5 text-xs">
  <div>
- <div>
+ 
   <div class="text-[10px] uppercase font-bold text-slate-400">Spett.le Cliente</div>
   <div class="font-bold text-sm text-slate-900">${escapeHtml(record.client)}</div>
   ${record.clientAddress ? `<div class="text-[11px] text-slate-600">${escapeHtml(record.clientAddress)}</div>` : ''}
@@ -1774,7 +1773,7 @@ clientContact: document.getElementById('quote-client-contact').value.trim(),
   ${record.clientContact ? `<div class="text-[11px] text-slate-600">Alla c.a. di: <strong>${escapeHtml(record.clientContact)}</strong></div>` : ''}
   ${record.clientEmail ? `<div class="text-[11px] text-slate-600">${escapeHtml(record.clientEmail)}</div>` : ''}
 </div>
- </div>
+ 
  <div class="text-right">
  <div class="text-[10px] uppercase font-bold text-slate-400">Agente di Riferimento</div>
  <div class="font-semibold text-slate-800">${escapeHtml(record.agent)}</div>
@@ -2300,6 +2299,8 @@ document.getElementById('quote-client-contact').value = q.clientContact || '';
  const sku = (cols[0] || '').trim();
  const name = (cols[1] || '').trim();
  if (!sku && !name) continue;
+ const rawStatus = (cols[2] || 'In uso').trim();
+if (/esaurimento|dismess/i.test(rawStatus)) continue;
 
  const grossPurchase = parseItalianNumber(cols[4]);
  const sc1 = parseItalianNumber(cols[5]);
@@ -2349,6 +2350,8 @@ document.getElementById('quote-client-contact').value = q.clientContact || '';
  const alias = (idxAlias !== -1 ? cols[idxAlias] : cols[0]) || '';
  const name = (idxName !== -1 ? cols[idxName] : cols[2]) || '';
  if (!sku && !name) continue;
+ const rawStatus = (idxStatus !== -1 && cols[idxStatus] ? cols[idxStatus] : 'In uso').trim();
+if (/esaurimento|dismess/i.test(rawStatus)) continue;
  const existing = catalog.find(p => p.sku === sku.trim());
 
  imported.push({
