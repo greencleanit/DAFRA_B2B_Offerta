@@ -1630,6 +1630,9 @@ function doPost(e) {
  validUntil: document.getElementById('quote-valid-until').value,
  client,
  clientEmail: document.getElementById('quote-client-email').value.trim(),
+ clientAddress: document.getElementById('quote-client-address').value.trim(),
+clientVat: document.getElementById('quote-client-vat').value.trim(),
+clientContact: document.getElementById('quote-client-contact').value.trim(),
  agent: document.getElementById('quote-agent').value.trim() || sessionStorage.getItem(AUTH_SESSION_KEY) || 'Direzione Commerciale',
  notes: document.getElementById('quote-notes').value.trim(),
  includeImages: document.getElementById('include-images-in-pdf').checked,
@@ -1765,9 +1768,14 @@ function doPost(e) {
 
  <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-5 text-xs">
  <div>
- <div class="text-[10px] uppercase font-bold text-slate-400">Spett.le Cliente</div>
- <div class="font-bold text-sm text-slate-900">${escapeHtml(record.client)}</div>
- ${record.clientEmail ? `<div class="text-[11px] text-slate-600">${escapeHtml(record.clientEmail)}</div>` : ''}
+ <div>
+  <div class="text-[10px] uppercase font-bold text-slate-400">Spett.le Cliente</div>
+  <div class="font-bold text-sm text-slate-900">${escapeHtml(record.client)}</div>
+  ${record.clientAddress ? `<div class="text-[11px] text-slate-600">${escapeHtml(record.clientAddress)}</div>` : ''}
+  ${record.clientVat ? `<div class="text-[11px] text-slate-600">P.IVA / C.F.: ${escapeHtml(record.clientVat)}</div>` : ''}
+  ${record.clientContact ? `<div class="text-[11px] text-slate-600">Alla c.a. di: <strong>${escapeHtml(record.clientContact)}</strong></div>` : ''}
+  ${record.clientEmail ? `<div class="text-[11px] text-slate-600">${escapeHtml(record.clientEmail)}</div>` : ''}
+</div>
  </div>
  <div class="text-right">
  <div class="text-[10px] uppercase font-bold text-slate-400">Agente di Riferimento</div>
@@ -2226,6 +2234,9 @@ function doPost(e) {
  currentQuote = JSON.parse(JSON.stringify(q.items));
  document.getElementById('quote-client').value = q.client;
  document.getElementById('quote-client-email').value = q.clientEmail || '';
+ document.getElementById('quote-client-address').value = q.clientAddress || '';
+document.getElementById('quote-client-vat').value = q.clientVat || '';
+document.getElementById('quote-client-contact').value = q.clientContact || '';
  document.getElementById('quote-agent').value = q.agent;
  document.getElementById('quote-notes').value = q.notes;
  saveAllState(false);
